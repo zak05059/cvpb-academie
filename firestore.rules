@@ -1,0 +1,434 @@
+rules_version = '2';
+// Règles de sécurité CVPB Manager — version 19 : programme et suivi pédagogique (15/11/2026)
+// - Seuls les comptes Google @uvci.edu.ci, ajoutés par la Présidence, peuvent entrer.
+// - Chaque rôle n'accède qu'à ses données ; la Présidence accède à tout ;
+//   la Vice-présidence lit tout sans rien valider ; le Secrétariat général voit membres et activités, sans finances.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Compte Google UVCI de la Présidence (identique à presidentEmail dans public/firebase-config.js)
+    function emailPresident() { return 'zakaria.ouedraogo@uvci.edu.ci'; }
+
+    function connecte() { return request.auth != null && request.auth.token.email != null; }
+    function email() { return request.auth.token.email.lower(); }
+    function uvci() { return connecte() && request.auth.token.email_verified == true && email().matches('.*@uvci[.]edu[.]ci$'); }
+    function president() { return uvci() && email() == emailPresident(); }
+    function fiche() { return get(/databases/$(database)/documents/users/$(email())).data; }
+    function inscrit() { return uvci() && exists(/databases/$(database)/documents/users/$(email())) && fiche().actif == true; }
+    function actif() { return president() || inscrit(); }
+    // Une personne = un compte ; elle cumule son rôle principal et ses rôles supplémentaires (rolesSup)
+    function parmi(roles) { return president() || (inscrit() && (fiche().role in roles || fiche().get('rolesSup', []).hasAny(roles))); }
+    function estRole(r) { return inscrit() && (fiche().role == r || r in fiche().get('rolesSup', [])); }
+    // Périmètre de commission (fonctions de l'organigramme)
+    function membreDe(com) { return inscrit() && com is string && com in fiche().get('commissions', []); }
+    function respDe(com) { return inscrit() && com is string && com in fiche().get('commissionsResp', []); }
+    // Lecture : les rôles cités + la Vice-présidence (lecture de tout, aucune écriture métier)
+    function lire(roles) { return parmi(roles) || estRole('vicepresident'); }
+    function seulement(champs) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(champs); }
+
+    // Fiches d'accès : une par adresse UVCI, créées par la Présidence
+    match /users/{em} {
+      // Annuaire de l'équipe (organigramme, tâches, réunions) : lisible par tous les comptes actifs
+      allow get: if uvci() && (email() == em || actif());
+      allow list: if actif();
+      allow create, delete: if president();
+      // Chacun peut seulement enregistrer son identifiant technique et sa dernière connexion
+      allow update: if president() || (inscrit() && email() == em && seulement(['uid', 'derniereConnexion']));
+    }
+
+    match /parametres/{id} {
+      allow read: if actif();
+      allow write: if president();
+    }
+
+    match /etudiants/{id} {
+      allow read: if lire(['encaissement', 'tresorerie', 'caisse', 'formation', 'pedagogie', 'tuteur', 'secretaire', 'tuteurs', 'accompagnement']);
+      allow create, update: if parmi(['encaissement']);
+      allow delete: if president();
+    }
+    // Téléphones des étudiants
+    match /prive/{id} {
+      allow read: if lire(['encaissement', 'tresorerie', 'caisse', 'formation', 'pedagogie', 'tuteurs', 'accompagnement']);
+      allow write: if parmi(['encaissement']);
+    }
+
+    // Registre : une écriture enregistrée ne peut plus être modifiée, seulement annulée avec motif
+    match /encaissements/{id} {
+      allow read: if lire(['encaissement', 'tresorerie', 'caisse']);
+      allow create: if parmi(['encaissement']);
+      allow update: if president() || (estRole('encaissement') && seulement(['statut', 'motif', 'annulePar', 'annuleLe']));
+      allow delete: if president();
+    }
+    match /depots/{id} {
+      allow read: if lire(['encaissement', 'caisse', 'tresorerie']);
+      allow create: if president() || (parmi(['encaissement']) && request.resource.data.statut == 'En attente');
+      allow update: if president() || (estRole('caisse') && seulement(['statut', 'recuPar', 'dateValidation', 'motif']));
+      allow delete: if president();
+    }
+    // Sorties : au-delà du seuil, seule la Présidence peut approuver (contrôlé par le serveur)
+    match /operations/{id} {
+      allow read: if lire(['caisse', 'tresorerie']);
+      allow create: if president() || (estRole('caisse') && (
+        request.resource.data.type == 'Entrée'
+        || request.resource.data.approuve == false
+        || request.resource.data.montant < get(/databases/$(database)/documents/parametres/general).data.seuils.approbation));
+      allow update: if president() || (estRole('caisse') && seulement(['statut', 'motif', 'annulePar', 'annuleLe']));
+      allow delete: if president();
+    }
+
+    // Formateur : n'écrit que dans les formations qui lui sont attribuées dans le catalogue
+    function assigne(code) {
+      return exists(/databases/$(database)/documents/formations/$(code))
+        && email() in get(/databases/$(database)/documents/formations/$(code)).data.formateurs;
+    }
+    // Séances : saisies par le formateur (statut Soumise), validées ou retournées par le Responsable Formation
+    match /seances/{id} {
+      allow read: if lire(['formation', 'pedagogie', 'secretaire', 'accompagnement']);
+      allow create: if parmi(['formation'])
+        || (estRole('pedagogie') && assigne(request.resource.data.formation) && request.resource.data.validation.statut == 'Soumise');
+      // Une séance validée ne se modifie plus : seule une réouverture (validation + historique) est possible
+      allow update: if president()
+        || (estRole('formation') && (resource.data.get('validation', {}).get('statut', 'Soumise') != 'Validée' || seulement(['validation', 'historique'])))
+        || (estRole('pedagogie') && assigne(resource.data.formation) && assigne(request.resource.data.formation)
+            && resource.data.get('validation', {}).get('statut', 'Soumise') != 'Validée'
+            && request.resource.data.validation.statut == 'Soumise')
+        || (estRole('secretaire') && seulement(['controle', 'historique']));
+      allow delete: if president();
+    }
+    // Notes : soumises par le formateur, validées ou retournées par le Responsable Formation
+    match /notes/{code} {
+      allow read: if lire(['formation', 'pedagogie', 'secretaire', 'accompagnement']);
+      allow create: if parmi(['formation']) || (estRole('pedagogie') && assigne(code) && request.resource.data.validation.statut == 'Soumises');
+      allow update: if president()
+        || (estRole('formation') && (resource.data.get('validation', {}).get('statut', '') != 'Validées' || seulement(['validation', 'historique'])))
+        || (estRole('pedagogie') && assigne(code) && resource.data.get('validation', {}).get('statut', '') != 'Validées'
+            && request.resource.data.validation.statut == 'Soumises')
+        || (estRole('secretaire') && seulement(['controle', 'historique']));
+      allow delete: if president();
+    }
+
+    // Catalogue des formations : géré par le Responsable Formation, contrôlé par le Secrétariat général
+    match /formations/{code} {
+      allow read: if actif();
+      allow create, update: if parmi(['formation'])
+        || (estRole('secretaire') && seulement(['controle', 'historique', 'majLe']));
+      allow delete: if president();
+    }
+
+    // Affectation des étudiants aux tuteurs (une fiche par tuteur, clé = son adresse UVCI)
+    match /affectations/{em} {
+      allow read: if actif() && (email() == em || lire(['tuteurs', 'accompagnement', 'secretaire', 'formation']));
+      allow write: if parmi(['tuteurs']);
+    }
+
+    // Rapports hebdomadaires des tuteurs : circuit Soumis → Validé/Retourné → Exploité → Contrôlé
+    match /rapports_hebdo/{id} {
+      allow read: if lire(['tuteurs', 'accompagnement', 'secretaire', 'formation'])
+        || (actif() && resource.data.tuteurEmail == email());
+      allow create: if president() || (estRole('tuteur') && request.resource.data.tuteurEmail == email()
+        && id == email() + '_' + request.resource.data.semaine
+        && request.resource.data.statut in ['Brouillon', 'Soumis']);
+      allow update: if president()
+        || (estRole('tuteur') && resource.data.tuteurEmail == email() && request.resource.data.tuteurEmail == email()
+            && resource.data.statut in ['Brouillon', 'Retourné'] && request.resource.data.statut in ['Brouillon', 'Soumis']
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['controle', 'exploitation', 'semaine']))
+        || (estRole('tuteurs') && resource.data.statut == 'Soumis' && request.resource.data.statut in ['Validé', 'Retourné']
+            && seulement(['statut', 'validation', 'historique']))
+        || (estRole('accompagnement') && resource.data.statut == 'Validé' && request.resource.data.statut == 'Exploité'
+            && seulement(['statut', 'exploitation', 'historique']))
+        || (estRole('secretaire') && resource.data.statut in ['Validé', 'Exploité']
+            && request.resource.data.statut in [resource.data.statut, 'Contrôlé']
+            && seulement(['statut', 'controle', 'historique']));
+      allow delete: if president();
+    }
+
+    // Suivis d'accompagnement : pilotés par le Responsable Suivi et Accompagnement
+    match /dossiers/{id} {
+      allow read: if lire(['accompagnement', 'tuteurs', 'formation', 'secretaire']);
+      allow create: if parmi(['accompagnement', 'tuteurs', 'formation']);
+      allow update: if parmi(['accompagnement']) || (estRole('secretaire') && seulement(['controle', 'historique']))
+        || (actif() && resource.data.creeParEmail == email() && resource.data.statut == 'Retourné'
+            && request.resource.data.statut == 'Ouvert' && seulement(['difficulte', 'statut', 'historique']));
+      allow delete: if president();
+    }
+
+    // Rapports des responsables au Secrétariat général
+    match /rapports_resp/{id} {
+      allow read: if lire(['secretaire']) || (actif() && resource.data.auteurEmail == email());
+      allow create: if parmi(['formation', 'tuteurs', 'accompagnement'])
+        && request.resource.data.auteurEmail == email() && request.resource.data.statut == 'Transmis';
+      allow update: if president()
+        || (actif() && resource.data.auteurEmail == email() && resource.data.statut == 'Complément demandé'
+            && request.resource.data.statut == 'Transmis' && request.resource.data.auteurEmail == email())
+        || (estRole('secretaire') && resource.data.statut == 'Transmis' && seulement(['statut', 'examen', 'historique']));
+      allow delete: if president();
+    }
+
+    // Synthèses hebdomadaires : rédigées par le Secrétariat général, orientées par la Présidence
+    match /syntheses/{semaine} {
+      allow read: if lire(['secretaire']);
+      allow create: if parmi(['secretaire']);
+      allow update: if president() || (estRole('secretaire') && resource.data.statut == 'Brouillon');
+      allow delete: if president();
+    }
+        // Rapports de tutorat : un document par tuteur (identifié par son compte Google)
+    match /rapports_tuteurs/{uid} {
+      allow read: if (actif() && request.auth.uid == uid) || lire(['formation', 'secretaire', 'tuteurs']);
+      allow create, update: if (estRole('tuteur') && request.auth.uid == uid) || parmi(['formation', 'tuteurs']);
+      allow delete: if president();
+    }
+
+    // Consignes de la Présidence : une par destinataire ; le destinataire ne peut que rendre compte
+    match /consignes/{id} {
+      allow read: if president() || estRole('vicepresident') || (actif() && resource.data.dest == email());
+      allow create, delete: if president();
+      allow update: if president() || (actif() && resource.data.dest == email()
+        && seulement(['statut', 'luLe', 'enCoursLe', 'faitLe', 'reponse'])
+        && request.resource.data.statut in ['Lue', 'En cours', 'Faite']);
+    }
+
+    // Évaluations mensuelles : la personne évaluée voit la sienne (avec le commentaire)
+    match /evaluations/{id} {
+      allow read: if president() || estRole('vicepresident') || (actif() && resource.data.email == email());
+      allow write: if president();
+    }
+    // Classement publié : scores seulement, visible par toute l'équipe
+    match /classement/{periode} {
+      allow read: if actif();
+      allow write: if president();
+    }
+
+    // Messages WhatsApp aux étudiants : domaine « fin » (paiements) ou « peda » (absences, notes)
+    function domaineOk(d) {
+      return (d == 'fin' && parmi(['encaissement', 'caisse'])) || (d == 'peda' && parmi(['formation', 'pedagogie', 'accompagnement']));
+    }
+    match /messages/{id} {
+      allow read: if domaineOk(resource.data.domaine) || estRole('vicepresident')
+        || (resource.data.domaine == 'fin' && estRole('tresorerie'));
+      allow create: if domaineOk(request.resource.data.domaine) && request.resource.data.par == request.auth.uid;
+      allow update: if domaineOk(resource.data.domaine) && seulement(['statut', 'envoyeLe', 'envoyePar', 'texte', 'edite']);
+      allow delete: if president();
+    }
+
+    // Notifications : un canal par rôle et par personne ; la Présidence reçoit tout
+    match /notifs/{canal}/items/{id} {
+      allow read: if (canal == 'president' && president())
+        || (inscrit() && canal != 'president' && (canal == fiche().role || canal in fiche().get('rolesSup', [])))
+        || (actif() && canal == 'u_' + request.auth.uid)
+        || (actif() && canal == 'e_' + email());
+      allow create: if actif() && request.resource.data.par == request.auth.uid;
+      allow update, delete: if president();
+    }
+
+
+    // ===== Gouvernance (cahier des charges 2026-2027, phases 1-2) =====
+    // Décisions : créées par la Présidence ; le Secrétariat général observe et contrôle sans veto ;
+    // chaque responsable d'exécution met à jour sa part.
+    match /decisions/{id} {
+      allow read: if lire(['secretaire']) || (actif() && email() in resource.data.executants);
+      allow create, delete: if president();
+      allow update: if president()
+        || (parmi(['secretaire']) && seulement(['observations', 'historique', 'statut'])
+            && (request.resource.data.statut == resource.data.statut
+                || (resource.data.statut == 'Émise' && request.resource.data.statut == 'Examen SG')))
+        || (actif() && email() in resource.data.executants && seulement(['exec', 'historique', 'statut'])
+            && (request.resource.data.statut == resource.data.statut
+                || (resource.data.statut == 'Confiée' && request.resource.data.statut == 'En cours')));
+    }
+    // Tâches : à une personne ou à une équipe ; un responsable n'attribue que dans sa commission
+    match /taches/{id} {
+      allow read: if lire(['secretaire'])
+        || (actif() && (resource.data.dest == email() || resource.data.auteurEmail == email() || membreDe(resource.data.commission)));
+      allow create: if actif() && request.resource.data.auteurEmail == email() && request.resource.data.statut == 'À faire' && (
+        parmi(['secretaire'])
+        || (respDe(request.resource.data.commission)
+            && (request.resource.data.dest == null
+                || request.resource.data.commission in get(/databases/$(database)/documents/users/$(request.resource.data.dest)).data.get('commissions', []))));
+      allow update: if parmi(['secretaire']) || (actif() && resource.data.auteurEmail == email())
+        || (actif() && (resource.data.dest == email() || (resource.data.dest == null && membreDe(resource.data.commission)))
+            && seulement(['statut', 'note', 'historique', 'majLe'])
+            && resource.data.statut in ['À faire', 'En cours', 'Bloquée']
+            && request.resource.data.statut in ['À faire', 'En cours', 'Bloquée', 'Terminée']);
+      allow delete: if president();
+    }
+    // Réunions : convocation, présences, compte rendu
+    match /reunions/{id} {
+      allow read: if lire(['secretaire']) || (actif() && (email() in resource.data.convoques || resource.data.auteurEmail == email()));
+      allow create: if actif() && request.resource.data.auteurEmail == email() && email() in request.resource.data.convoques
+        && (parmi(['secretaire']) || respDe(request.resource.data.commission));
+      allow update: if parmi(['secretaire']) || (actif() && resource.data.auteurEmail == email()) || respDe(resource.data.commission);
+      allow delete: if president();
+    }
+    // Journal d'audit : ajout seulement, jamais modifié ni effacé
+    match /audit/{id} {
+      allow read: if lire(['secretaire']);
+      allow create: if actif() && request.resource.data.par == request.auth.uid && request.resource.data.parEmail == email();
+      allow update, delete: if false;
+    }
+
+
+    // ===== Délégués de spécialité =====
+    function groupeMoi() { return fiche().get('specialite', '') + ' · ' + fiche().get('niveau', ''); }
+    function tuteurDuGroupe(g) { return estRole('tuteur') && g == groupeMoi(); }
+    // Demandes de cours et cours à expliquer (dépôt du lundi)
+    match /demandes_cours/{id} {
+      allow read: if lire(['formation', 'tuteurs', 'accompagnement', 'secretaire'])
+        || (actif() && resource.data.delegueEmail == email()) || tuteurDuGroupe(resource.data.groupe);
+      allow create: if estRole('delegue') && request.resource.data.delegueEmail == email()
+        && request.resource.data.groupe == groupeMoi() && request.resource.data.statut == 'Soumise';
+      allow update: if (parmi(['formation', 'tuteurs']) || tuteurDuGroupe(resource.data.groupe))
+        && seulement(['statut', 'reponse', 'historique', 'majLe']);
+      allow delete: if president();
+    }
+    // Rapport hebdomadaire du délégué : contrôlé par le tuteur du groupe et les trois responsables
+    match /rapports_delegues/{id} {
+      allow read: if lire(['formation', 'tuteurs', 'accompagnement', 'secretaire'])
+        || (actif() && resource.data.delegueEmail == email()) || tuteurDuGroupe(resource.data.groupe);
+      allow create: if estRole('delegue') && request.resource.data.delegueEmail == email()
+        && id == email() + '_' + request.resource.data.semaine && request.resource.data.groupe == groupeMoi()
+        && request.resource.data.statut in ['Brouillon', 'Soumis'] && request.resource.data.visas == {};
+      allow update: if president()
+        || (estRole('delegue') && resource.data.delegueEmail == email() && request.resource.data.delegueEmail == email()
+            && request.resource.data.semaine == resource.data.semaine
+            && resource.data.statut in ['Brouillon', 'Retourné'] && request.resource.data.statut in ['Brouillon', 'Soumis']
+            && request.resource.data.visas == {})
+        || ((parmi(['tuteurs', 'accompagnement', 'formation']) || tuteurDuGroupe(resource.data.groupe))
+            && resource.data.statut == 'Soumis' && request.resource.data.statut in ['Soumis', 'Retourné']
+            && seulement(['statut', 'visas', 'historique']));
+      allow delete: if president();
+    }
+    // Notes hebdomadaires des tuteurs par les délégués : jamais lisibles par les tuteurs
+    match /notes_tuteurs/{id} {
+      allow read: if lire(['tuteurs', 'secretaire']) || (actif() && resource.data.delegueEmail == email());
+      allow create, update: if estRole('delegue') && request.resource.data.delegueEmail == email()
+        && id == email() + '_' + request.resource.data.tuteurKey + '_' + request.resource.data.semaine;
+      allow delete: if president();
+    }
+
+    // Espace responsables : rapport hebdomadaire de chaque responsable (fait, difficultés, prévu)
+    match /rapports_equipe/{id} {
+      allow read: if lire(['secretaire']) || (actif() && resource.data.email == email())
+        || (inscrit() && resource.data.commissions.hasAny(fiche().get('commissionsResp', [])));
+      allow create, update: if actif() && request.resource.data.email == email()
+        && id == email() + '_' + request.resource.data.semaine;
+      allow delete: if president();
+    }
+
+    // Dernière notification lue (propre à chacun)
+    match /etat/{uid} {
+      allow read, write: if actif() && request.auth.uid == uid;
+    }
+      // Programme de la communauté (calendrier commun) : lisible par tous les comptes actifs.
+    // Académie : Présidence et Responsable Formation · Tutorat : Responsable des Tuteurs ·
+    // Communauté : Présidence et Secrétariat général. Les intervenants marquent seulement la séance « Tenue ».
+    match /programme/{id} {
+      allow read: if actif();
+      allow create: if president()
+        || (request.resource.data.type == 'academie' && parmi(['formation']))
+        || (request.resource.data.type == 'tutorat' && parmi(['tuteurs']))
+        || (request.resource.data.type == 'communaute' && parmi(['secretaire']));
+      allow update: if president()
+        || (request.resource.data.type == resource.data.type && (
+             (resource.data.type == 'academie' && estRole('formation'))
+          || (resource.data.type == 'tutorat' && estRole('tuteurs'))
+          || (resource.data.type == 'communaute' && estRole('secretaire'))))
+        || (actif() && email() in resource.data.get('intervenants', [])
+            && seulement(['statut', 'seanceId', 'pointeLe', 'pointePar', 'historique']));
+      allow delete: if president();
+    }
+    // Présences aux séances de tutorat (données d'étudiants : accès restreint)
+    match /pointages_tutorat/{id} {
+      allow read: if lire(['tuteurs', 'accompagnement', 'secretaire', 'formation'])
+        || (actif() && email() in resource.data.get('tuteurs', []));
+      allow create, update: if parmi(['tuteurs'])
+        || (actif() && email() in get(/databases/$(database)/documents/programme/$(id)).data.get('intervenants', []));
+      allow delete: if president();
+    }
+    // =====================================================================
+//  CVPB ACADÉMIE — RÈGLES À AJOUTER À CELLES DE CVPB MANAGER
+//  (même projet Firebase : cvpb-gestion-001)
+//
+//  ⚠ NE PAS REMPLACER les règles existantes : un projet Firebase n'a qu'UN seul
+//  fichier de règles. Ce bloc utilise les fonctions déjà définies par CVPB Manager
+//  (uvci, email, president, parmi, estRole, lire).
+//
+//  Où le coller : Firebase > Firestore Database > Règles, juste AVANT les deux
+//  dernières accolades « } » de fin du fichier, puis « Publier ».
+//  Pour CVPB Manager : ajoutez aussi ce bloc à la fin de regles-firestore.txt
+//  (même emplacement) pour qu'il ne soit pas effacé à la prochaine mise à jour.
+// =====================================================================
+
+    // ===== CVPB Académie =====
+    // Personnel ayant accès à l'Académie (rôles CVPB Manager)
+    function acaStaff() { return parmi(['formation', 'accompagnement', 'pedagogie', 'secretaire', 'encaissement', 'caisse', 'tresorerie']) || estRole('vicepresident'); }
+    function acaPedago() { return parmi(['formation', 'accompagnement']); }
+    function acaDossierPath() { return /databases/$(database)/documents/aca_apprenants/$(email()); }
+    function acaDossier() { return get(acaDossierPath()).data; }
+    // Étudiant autorisé = rattaché à l'Académie ET « Actif » dans la liste etudiants de CVPB Manager
+    function acaEleve() {
+      return uvci() && exists(acaDossierPath())
+        && acaDossier().get('statut', 'Actif') != 'Abandon'
+        && exists(/databases/$(database)/documents/etudiants/$(acaDossier().matricule))
+        && get(/databases/$(database)/documents/etudiants/$(acaDossier().matricule)).data.statut == 'Actif';
+    }
+    function acaConnecte() { return acaStaff() || acaEleve(); }
+    // Un formateur n'écrit que dans SES formations
+    function acaFormateurDe(fid) { return estRole('pedagogie') && get(/databases/$(database)/documents/aca_formations/$(fid)).data.formateurEmail == email(); }
+
+    // L'étudiant peut lire SA fiche de la liste CVPB Manager (et seulement la sienne)
+    match /etudiants/{id} {
+      allow get: if uvci() && exists(acaDossierPath()) && acaDossier().matricule == id;
+    }
+    // L'étudiant peut lire SES encaissements (lecture seule)
+    match /encaissements/{id} {
+      allow read: if acaEleve() && resource.data.matricule == acaDossier().matricule;
+    }
+
+    match /aca_settings/{id} { allow read: if acaConnecte(); allow write: if president(); }
+
+    match /aca_formations/{id} { allow read: if acaConnecte(); allow write: if acaPedago(); }
+    match /aca_activites/{id}  { allow read: if acaConnecte(); allow write: if acaPedago() || parmi(['secretaire']); }
+    match /aca_seances/{id} {
+      allow read: if acaConnecte();
+      allow write: if acaPedago() || (request.resource != null && acaFormateurDe(request.resource.data.formationId));
+    }
+    match /aca_exercices/{id} {
+      allow read: if acaConnecte();
+      allow create, update: if acaPedago() || acaFormateurDe(request.resource.data.formationId);
+      allow delete: if acaPedago() || acaFormateurDe(resource.data.formationId);
+    }
+
+    // Dossiers Académie (clé = e-mail UVCI). Création possible SEULEMENT pour un étudiant de la liste CVPB Manager.
+    match /aca_apprenants/{em} {
+      allow read: if acaStaff() || (uvci() && em == email());
+      allow create: if (acaPedago() || parmi(['secretaire'])) && em.matches('.*@uvci[.]edu[.]ci$')
+        && exists(/databases/$(database)/documents/etudiants/$(request.resource.data.matricule))
+        && get(/databases/$(database)/documents/etudiants/$(request.resource.data.matricule)).data.statut == 'Actif';
+      allow update: if (acaPedago() || parmi(['secretaire'])) && request.resource.data.matricule == resource.data.matricule;
+      allow delete: if president();
+    }
+
+    match /aca_presences/{id} {
+      allow read: if acaStaff() || (acaEleve() && resource.data.email == email());
+      allow write: if acaPedago() || (request.resource != null && acaFormateurDe(request.resource.data.formationId));
+    }
+    match /aca_notes/{id} {
+      allow read: if acaStaff() || (acaEleve() && resource.data.email == email());
+      allow write: if acaPedago() || (request.resource != null && acaFormateurDe(request.resource.data.formationId));
+    }
+    match /aca_sanctions/{id} {
+      allow read: if acaStaff() || (acaEleve() && resource.data.email == email());
+      allow write: if acaPedago();
+    }
+
+    match /aca_annonces/{id} { allow read: if acaStaff(); allow create: if acaPedago() || parmi(['secretaire']); allow update, delete: if president(); }
+    match /aca_notifications/{id} {
+      allow read: if acaConnecte() && (resource.data.dest == email() || resource.data.dest == 'all');
+      allow create: if acaStaff() && request.resource.data.par == email();
+      allow update: if acaConnecte() && resource.data.dest == email() && seulement(['lu']);
+      allow delete: if president();
+    }
+    // ===== fin CVPB Académie =====
+
+  }
+}
