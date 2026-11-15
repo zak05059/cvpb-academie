@@ -11,12 +11,12 @@ export default {
   //    Tant que apiKey vaut "A_REMPLACER", l'application tourne en MODE DÉMO
   //    (données fictives stockées sur le téléphone, aucun envoi en ligne).
   firebase: {
-    apiKey: "A_REMPLACER",
-    authDomain: "A_REMPLACER.firebaseapp.com",
-    projectId: "A_REMPLACER",
-    storageBucket: "A_REMPLACER.appspot.com",
-    messagingSenderId: "A_REMPLACER",
-    appId: "A_REMPLACER"
+    apiKey: "AIzaSyAKX7yyLiZc5ffBSHK0r3uAsYDUmuuZm4o",
+    authDomain: "cvpb-gestion-001.firebaseapp.com",
+    projectId: "cvpb-gestion-001",
+    storageBucket: "cvpb-gestion-001.firebasestorage.app",
+    messagingSenderId: "359098791087",
+    appId: "1:359098791087:web:2c9aa6200e912046b4905a"
   },
 
   // 2) Domaine autorisé : seuls les comptes Google de ce domaine peuvent se connecter.
