@@ -156,7 +156,7 @@ function acaRole(u) {
 // celles de CVPB Manager. « etudiants » et « encaissements » sont LUES dans CVPB Manager (lecture seule).
 const EXTERNES = ['etudiants', 'encaissements', 'users'];
 // Collections de CVPB Manager lues par l'Académie sous un autre nom (lecture seule)
-const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme', mgr_pt_tut: 'pointages_tutorat', mgr_pt_com: 'pointages_communaute', mgr_notes: 'notes_eleves' };
+const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme', mgr_pt_tut: 'pointages_tutorat', mgr_pt_com: 'pointages_communaute', mgr_notes: 'notes_eleves', mgr_tshirts: 'tshirts' };
 const TYPES_PROG = ['academie', 'tutorat', 'communaute'];
 const QUIZ_ROLES = ['president', 'vp', 'resp_formation', 'resp_suivi', 'formateur'];
 const PHYS = c => PHYS_MAP[c] || (EXTERNES.includes(c) ? c : 'aca_' + c);
@@ -227,6 +227,8 @@ async function loadData(force = false) {
     D.mgrPtCom = lk ? await safe(DB.listIn('mgr_pt_com', ['presences', lk.matricule], CODES_PRES)) : [];
     // Notes validées dans CVPB Manager : uniquement SES relevés
     D.mgrNotes = lk ? await safe(DB.list('mgr_notes', { matricule: lk.matricule })) : [];
+    // Taille de T-shirt choisie (lue par CVPB Manager pour la commande)
+    D.tshirt = lk ? await DB.get('mgr_tshirts', lk.matricule).catch(() => null) : null;
     D.mgrFormations = await safe(DB.list('mgr_formations'));
     D.mgrProgramme = lk ? await safe(DB.listIn('mgr_programme', ['type'], TYPES_PROG)) : [];
     // Évaluations en ligne : quiz publiés, corrigés publiés, et SES réponses
@@ -262,8 +264,10 @@ async function loadData(force = false) {
   const n6 = fusionQuiz(D, r === 'etudiant' ? me : null);
   const n7 = (D.infos || []).filter(i => r !== 'etudiant' || infoPourMoi(D, i)).map(i => ({ id: 'inf_' + i.id, local: true, dest: me, cat: 'info', titre: (i.epingle ? '📌 ' : '') + i.titre, message: String(i.contenu || '').slice(0, 160), date: i.date || '' }));
   const n4 = r === 'etudiant' ? D.presences.filter(p => p.source === 'mgr' && (p.statut === 'A' || p.statut === 'R')).map(p => ({ id: 'pt_' + p.seanceId, local: true, dest: me, cat: 'assiduite', titre: p.statut === 'A' ? 'Absence enregistrée' : 'Retard enregistré', message: `${fName(D, p.formationId)} — séance du ${fDate(p.date)} (pointage CVPB Manager).`, date: p.date + 'T18:00:00' })) : [];
+  const ts = r === 'etudiant' && D.tshirt;
+  const n9 = ts && ['Commandé', 'Remis'].includes(ts.statut) ? [{ id: 'ts_' + ts.statut, local: true, dest: me, cat: 'paiement', titre: ts.statut === 'Remis' ? 'T-shirt remis 👕' : 'T-shirt commandé 👕', message: ts.statut === 'Remis' ? `Votre T-shirt (taille ${ts.taille}) vous a été remis.` : `Votre T-shirt (taille ${ts.taille}) est commandé. Vous serez informé(e) de la remise.`, date: (ts.statut === 'Remis' ? ts.remisLe : ts.commandeLe) || '' }] : [];
   const n3 = r === 'etudiant' ? D.encaissements.map(e => ({ id: 'enc_' + e.id, local: true, dest: me, cat: 'paiement', titre: 'Paiement enregistré ✅', message: `${money(e.montant)} — ${e.nature || 'Paiement'}${e.mois ? ' (' + e.mois + ')' : ''} · ${e.mode || ''}${e.num ? ' · ' + e.num : ''}.`, date: (e.date || TODAY()) + 'T12:00:00' })) : [];
-  D.notifications = [...n1, ...n2, ...n3, ...n4, ...n5, ...n6, ...n7, ...n8].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  D.notifications = [...n1, ...n2, ...n3, ...n4, ...n5, ...n6, ...n7, ...n8, ...n9].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   D.__ok = true;
   S.D = D;
   return D;
@@ -622,6 +626,7 @@ function homeStudent(D) {
   const fs = D.formations.filter(f => (a.formations || []).includes(f.id));
   const alerts = [];
   if (fin.reste > 0) alerts.push(`<div class="alert warn">${IC.money}<div><b>Reste à payer : ${money(fin.reste)}.</b> ${fin.teeOk ? '' : 'Votre T-shirt n\'est pas encore soldé. '}Rapprochez-vous de la Responsable des encaissements.</div></div>`);
+  if (fin.teeOk && !D.tshirt?.taille) alerts.push(`<div class="alert info">${IC.info}<div><b>👕 Votre T-shirt est payé : choisissez votre taille.</b> <a href="#/mespaiements">Choisir ma taille</a></div></div>`);
   if (ps.taux != null && ps.taux < st.seuilAssiduite) alerts.push(`<div class="alert bad">${IC.alert}<div><b>Assiduité insuffisante (${ps.taux} %).</b> Le minimum attendu est de ${st.seuilAssiduite} %.</div></div>`);
   if (sancA.length) alerts.push(`<div class="alert bad">${IC.gavel}<div><b>${sancA.length} sanction(s) en cours.</b> <a href="#/discipline">Voir la rubrique Discipline</a></div></div>`);
   const ex = D.exercices.filter(e => (a.formations || []).includes(e.formationId)).sort((x, y) => (x.date || '').localeCompare(y.date || '')).map(e => ({ e, n: D.notes.find(n => n.exerciceId === e.id && n.note !== '' && n.note != null) })).filter(x => x.n).slice(-7);
@@ -1056,10 +1061,27 @@ PAGES.mesnotes = D => {
   return `<div class="grid g3" style="margin-bottom:16px">${kpi(IC.star, 'v5', mg == null ? '—' : mg.toFixed(2) + '/20', 'Moyenne générale')}${kpi(IC.check, 'v2', D.notes.filter(n => n.note !== '').length, 'Exercices notés')}${kpi(IC.clock, 'v3', D.exercices.filter(e => (a.formations || []).includes(e.formationId) && !D.notes.some(n => n.exerciceId === e.id && n.note !== '')).length, 'En attente de note')}</div>` +
     fs.map(f => { const ex = D.exercices.filter(e => e.formationId === f.id).sort((x, y) => (y.date || '').localeCompare(x.date || '')), m = moyenne(D, me, f.id); return `<div class="card" style="margin-bottom:16px"><div class="card-h"><h3>${esc(f.titre)}</h3>${moyBadge(m)}</div><div class="tbl-wrap"><table><thead><tr><th>Exercice</th><th>Date</th><th>Coef.</th><th>Note</th><th>Appréciation</th></tr></thead><tbody>${ex.map(e => { const n = D.notes.find(n => n.exerciceId === e.id); const v = n && n.note !== '' ? +n.note : null; return `<tr><td><div class="strong">${esc(e.titre)}</div><div class="small muted">${esc(e.type || '')}</div></td><td>${fShort(e.date)}</td><td>${esc(e.coef || 1)}</td><td>${v == null ? '<span class="b b-g">Non noté</span>' : `<span class="b ${v / e.bareme >= .6 ? 'b-v' : v / e.bareme >= .5 ? 'b-o' : 'b-r'}">${v}/${e.bareme}</span>`}</td><td class="small">${esc(n?.commentaire || '')}</td></tr>`; }).join('') || '<tr><td colspan="5" class="center muted">Aucun exercice pour le moment</td></tr>'}</tbody></table></div></div>`; }).join('');
 };
+// Taille de T-shirt : l'étudiant qui a payé son T-shirt choisit sa taille ; modifiable jusqu'à la commande
+const TAILLES_TS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+function tshirtBloc(D, f) {
+  const t = D.tshirt, st = t?.statut || (t?.taille ? 'Choisie' : '');
+  if (!f.teeOk) return `<p class="small" style="margin-top:8px">👕 Vous choisirez la taille de votre T-shirt dès qu'il sera payé.</p>`;
+  if (st === 'Commandé' || st === 'Remis') return `<div class="alert ok" style="margin-top:10px">${IC.check}<div>Taille <b>${esc(t.taille)}</b> · ${st === 'Remis' ? 'T-shirt remis' : 'commande passée : la taille ne peut plus être modifiée'}.</div></div>`;
+  return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div class="strong" style="margin-bottom:8px">👕 Ma taille de T-shirt ${t?.taille ? `<span class="b b-v">${esc(t.taille)}</span>` : '<span class="b b-o">À choisir</span>'}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${TAILLES_TS.map(x => `<button class="btn ${t?.taille === x ? 'btn-p' : 'btn-o'} btn-s" data-act="tshirtTaille" data-taille="${x}" style="min-width:52px">${x}</button>`).join('')}</div>
+    <p class="small muted" style="margin-top:8px">${t?.taille ? 'Vous pouvez changer de taille jusqu\'à la commande.' : 'Choisissez avec soin : la taille sert à passer la commande.'}</p></div>`;
+}
+ACT.tshirtTaille = async d => {
+  const D = S.D, a = D.apprenants[0]; if (!a?.matricule) return;
+  if (D.tshirt && ['Commandé', 'Remis'].includes(D.tshirt.statut)) { toast('Commande déjà passée : la taille ne peut plus être modifiée.', 'bad'); return; }
+  const data = { matricule: a.matricule, nom: `${a.nom} ${a.prenoms}`.trim(), email: S.user.email, taille: d.taille, statut: 'Choisie', choisiLe: new Date().toISOString() };
+  try { await DB.set('mgr_tshirts', a.matricule, data); D.tshirt = { ...(D.tshirt || {}), ...data }; toast(`Taille ${d.taille} enregistrée ✅`, 'ok'); render(); }
+  catch (e) { toast('Enregistrement impossible : ' + e.message, 'bad'); }
+};
 PAGES.mespaiements = D => {
   const me = S.user.email, st = D.settings, f = finance(D, me);
   return `<div class="grid g3" style="margin-bottom:16px">${kpi(IC.money, 'v2', money(f.total), 'Total versé')}${kpi(IC.chart, 'v1', money(f.du), 'Dû à ce jour')}${kpi(IC.alert, f.reste ? 'v3' : 'v2', money(f.reste), 'Reste à payer')}</div>
-  <div class="grid g2"><div class="card"><div class="card-h"><h3>T-shirt CVPB</h3>${f.teeOk ? '<span class="b b-v">Soldé</span>' : '<span class="b b-r">Non soldé</span>'}</div><div class="card-b"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>${money(Math.min(f.tee, st.teeshirt))} payé</span><span class="muted">sur ${money(st.teeshirt)}</span></div>${prog(f.tee / st.teeshirt * 100)}<p class="small muted" style="margin-top:8px">Obligatoire, payable en une seule fois (compris dans l'inscription).</p></div></div>
+  <div class="grid g2"><div class="card"><div class="card-h"><h3>T-shirt CVPB</h3>${f.teeOk ? '<span class="b b-v">Soldé</span>' : '<span class="b b-r">Non soldé</span>'}</div><div class="card-b"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>${money(Math.min(f.tee, st.teeshirt))} payé</span><span class="muted">sur ${money(st.teeshirt)}</span></div>${prog(f.tee / st.teeshirt * 100)}<p class="small muted" style="margin-top:8px">Obligatoire, payable en une seule fois (compris dans l'inscription).</p>${tshirtBloc(D, f)}</div></div>
   <div class="card"><div class="card-h"><h3>Cotisations mensuelles</h3><span class="small muted">${money(st.mensualite)} / mois</span></div>${f.parMois.map(m => `<div class="list-i"><div style="flex:1"><div class="t" style="text-transform:capitalize">${m.code} · ${fMois(m.mois)}</div>${prog(m.paye / m.du * 100)}</div><div class="right"><b>${money(m.paye)}</b><div>${m.reste ? `<span class="b ${m.paye ? 'b-o' : 'b-r'}">Reste ${money(m.reste)}</span>` : '<span class="b b-v">Soldé</span>'}</div></div></div>`).join('') || empty('Aucune cotisation due pour le moment.')}${f.avance ? `<div class="list-i"><div style="flex:1" class="small">Payé d'avance pour les mois suivants</div><b>${money(f.avance)}</b></div>` : ''}</div></div>
   <div class="card" style="margin-top:16px"><div class="card-h"><h3>Historique de mes paiements</h3></div><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Objet</th><th>Mode</th><th class="right">Montant</th></tr></thead><tbody>${f.encs.map(p => `<tr><td>${fShort(p.date)}</td><td>${esc(p.nature || '')}${p.num ? `<div class="small muted">${esc(p.num)}</div>` : ''}</td><td>${esc(p.mode || '')}</td><td class="right strong">${money(p.montant)}</td></tr>`).join('') || '<tr><td colspan="4" class="center muted">Aucun paiement enregistré</td></tr>'}</tbody></table></div></div>
   <p class="small muted" style="margin-top:12px">Les cotisations sont affectées au plus ancien mois non soldé. En cas d'erreur, signalez-la à la Responsable des encaissements.</p>`;
