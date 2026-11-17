@@ -156,7 +156,7 @@ function acaRole(u) {
 // celles de CVPB Manager. « etudiants » et « encaissements » sont LUES dans CVPB Manager (lecture seule).
 const EXTERNES = ['etudiants', 'encaissements', 'users'];
 // Collections de CVPB Manager lues par l'Académie sous un autre nom (lecture seule)
-const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme', mgr_pt_tut: 'pointages_tutorat', mgr_pt_com: 'pointages_communaute' };
+const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme', mgr_pt_tut: 'pointages_tutorat', mgr_pt_com: 'pointages_communaute', mgr_notes: 'notes_eleves' };
 const TYPES_PROG = ['academie', 'tutorat', 'communaute'];
 const QUIZ_ROLES = ['president', 'vp', 'resp_formation', 'resp_suivi', 'formateur'];
 const PHYS = c => PHYS_MAP[c] || (EXTERNES.includes(c) ? c : 'aca_' + c);
@@ -164,7 +164,7 @@ const CODES_PRES = ['P', 'R', 'J', 'A'];
 const COLS = ['settings', 'users', 'formations', 'apprenants', 'seances', 'presences', 'exercices', 'notes', 'paiements', 'caisse', 'sanctions', 'activites', 'notifications', 'annonces'];
 
 const DemoDB = {
-  KEY: 'cvpba_demo_v7',
+  KEY: 'cvpba_demo_v8',
   data: null,
   load() { try { this.data = JSON.parse(localStorage.getItem(this.KEY)); } catch { this.data = null; } if (!this.data) { this.data = seedDemo(); this.save(); } },
   save() { try { localStorage.setItem(this.KEY, JSON.stringify(this.data)); } catch { } },
@@ -225,6 +225,8 @@ async function loadData(force = false) {
     // Pointages du tutorat et des activités de la communauté (CVPB Manager) où CET étudiant figure
     D.mgrPtTut = lk ? await safe(DB.listIn('mgr_pt_tut', ['presences', lk.matricule], CODES_PRES)) : [];
     D.mgrPtCom = lk ? await safe(DB.listIn('mgr_pt_com', ['presences', lk.matricule], CODES_PRES)) : [];
+    // Notes validées dans CVPB Manager : uniquement SES relevés
+    D.mgrNotes = lk ? await safe(DB.list('mgr_notes', { matricule: lk.matricule })) : [];
     D.mgrFormations = await safe(DB.list('mgr_formations'));
     D.mgrProgramme = lk ? await safe(DB.listIn('mgr_programme', ['type'], TYPES_PROG)) : [];
     // Évaluations en ligne : quiz publiés, corrigés publiés, et SES réponses
@@ -242,6 +244,7 @@ async function loadData(force = false) {
     D.mgrSeances = lisentPointages ? await safe(DB.list('mgr_seances')) : [];
     D.mgrPtTut = lisentPointages ? await safe(DB.list('mgr_pt_tut')) : [];
     D.mgrPtCom = lisentPointages ? await safe(DB.list('mgr_pt_com')) : [];
+    D.mgrNotes = lisentPointages ? await safe(DB.list('mgr_notes')) : [];
     D.mgrFormations = await safe(DB.list('mgr_formations'));
     D.mgrProgramme = await safe(DB.listIn('mgr_programme', ['type'], TYPES_PROG));
     const lisentQuiz = QUIZ_ROLES.includes(r);
@@ -254,12 +257,13 @@ async function loadData(force = false) {
   // Les paiements sont saisis dans CVPB Manager : chaque encaissement devient une notification pour l'étudiant
   fusionPointages(D);
   fusionPointagesHorsAcademie(D);
+  const n8 = fusionNotesMgr(D, r === 'etudiant' ? me : null);
   const n5 = fusionProgramme(D, r === 'etudiant' ? me : null);
   const n6 = fusionQuiz(D, r === 'etudiant' ? me : null);
   const n7 = (D.infos || []).filter(i => r !== 'etudiant' || infoPourMoi(D, i)).map(i => ({ id: 'inf_' + i.id, local: true, dest: me, cat: 'info', titre: (i.epingle ? '📌 ' : '') + i.titre, message: String(i.contenu || '').slice(0, 160), date: i.date || '' }));
   const n4 = r === 'etudiant' ? D.presences.filter(p => p.source === 'mgr' && (p.statut === 'A' || p.statut === 'R')).map(p => ({ id: 'pt_' + p.seanceId, local: true, dest: me, cat: 'assiduite', titre: p.statut === 'A' ? 'Absence enregistrée' : 'Retard enregistré', message: `${fName(D, p.formationId)} — séance du ${fDate(p.date)} (pointage CVPB Manager).`, date: p.date + 'T18:00:00' })) : [];
   const n3 = r === 'etudiant' ? D.encaissements.map(e => ({ id: 'enc_' + e.id, local: true, dest: me, cat: 'paiement', titre: 'Paiement enregistré ✅', message: `${money(e.montant)} — ${e.nature || 'Paiement'}${e.mois ? ' (' + e.mois + ')' : ''} · ${e.mode || ''}${e.num ? ' · ' + e.num : ''}.`, date: (e.date || TODAY()) + 'T12:00:00' })) : [];
-  D.notifications = [...n1, ...n2, ...n3, ...n4, ...n5, ...n6, ...n7].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  D.notifications = [...n1, ...n2, ...n3, ...n4, ...n5, ...n6, ...n7, ...n8].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   D.__ok = true;
   S.D = D;
   return D;
@@ -290,7 +294,7 @@ function fusionPointages(D) {
 // - type « communaute » : validées par le Président.
 // Tant qu'une séance n'est pas validée, les apprenants ne la voient pas et ne sont pas notifiés.
 // Apprenants concernés (Académie) : inscrits à la formation liée au code ; sinon tous ceux du niveau de la formation.
-// Tutorat et activités de la communauté (CVPB Manager) : suivis à part, hors moyenne d'assiduité de l'Académie
+// Tutorat et activités de la communauté (CVPB Manager) : cartes séparées, mais COMPTÉS dans le taux d'assiduité global
 const codeSpec = x => (String(x || '').match(/\(([A-Z]{2,5}-[A-Z]{2,5})\)/) || String(x || '').match(/^([A-Z]{2,5}-[A-Z]{2,5})/) || [])[1] || '';
 const specsProg = p => (p.specialites || []).length ? p.specialites : [p.specialite].filter(Boolean);
 function formationHors(D, kind) {
@@ -309,6 +313,32 @@ function fusionPointagesHorsAcademie(D) {
       if (!(a.formations || []).includes(fid)) a.formations = [...(a.formations || []), fid];
     });
   }));
+}
+// Notes saisies par les formateurs dans CVPB Manager (devoirs, TP, séances pratiques…), publiées après validation
+// par le Responsable Formation : chaque évaluation devient un exercice, chaque note compte dans la moyenne.
+// ABS = absent non justifié (0/20) ; EXC = excusé (hors moyenne).
+function formationMgr(D, code) {
+  const lien = D.formations.find(f => f.codeCVPB === code && f.source !== 'mgr'); if (lien) return lien.id;
+  const fid = 'mgr_' + code;
+  if (!D.formations.some(f => f.id === fid)) { const mf = (D.mgrFormations || []).find(f => (f.code || f.id) === code) || {}; D.formations.push({ id: fid, titre: mf.intitule || code, domaine: 'CVPB Manager', niveau: mf.niveau || 'Tous niveaux', formateurs: mf.formateurs || [], formateurNom: '', statut: 'En cours', source: 'mgr', codeCVPB: code }); }
+  return fid;
+}
+function fusionNotesMgr(D, moi) {
+  const notifs = [], byMat = {}; D.apprenants.forEach(a => byMat[a.matricule] = a);
+  (D.mgrNotes || []).filter(r => !r.retire && r.formation).forEach(r => {
+    const a = byMat[r.matricule]; if (!a) return;
+    const fid = formationMgr(D, r.formation);
+    if (!(a.formations || []).includes(fid)) a.formations = [...(a.formations || []), fid];
+    (r.evals || []).forEach(ev => {
+      const eid = 'mgrev_' + r.formation + '_' + ev.id;
+      if (!D.exercices.some(e => e.id === eid)) D.exercices.push({ id: eid, formationId: fid, titre: ev.libelle, type: ev.type || 'Évaluation', date: ev.date || (r.publieLe || '').slice(0, 10), bareme: 20, coef: +ev.coef || 1, source: 'mgr' });
+      if (ev.note === 'EXC' || ev.note == null || ev.note === '') return;
+      const abs = ev.note === 'ABS';
+      D.notes.push({ id: 'mn_' + r.id + '_' + ev.id, exerciceId: eid, formationId: fid, email: a.id, note: abs ? 0 : +ev.note, commentaire: abs ? 'Absent (non justifié)' : 'Note validée · CVPB Manager', source: 'mgr' });
+    });
+    if (moi) notifs.push({ id: 'mnt_' + r.id + '_' + (r.publieLe || ''), local: true, dest: moi, cat: 'note', titre: 'Notes publiées 📝', message: `${r.intitule || r.formation} — ${(r.evals || []).length} évaluation(s)${r.moyenne != null ? ' · moyenne ' + String(r.moyenne).replace('.', ',') + '/20' : ''}.`, date: r.publieLe || '' });
+  });
+  return notifs;
 }
 const validationDe = (D, id) => (D.validations || []).find(v => v.id === id);
 function fusionProgramme(D, moi) {
@@ -363,8 +393,7 @@ const myFormations = D => S.role === 'formateur' ? D.formations.filter(f => lowe
 
 function presStats(D, email, fid) {
   const app = D.apprenants.find(a => a.id === email); const fset = new Set(app?.formations || []);
-  const hors = new Set(D.formations.filter(f => f.horsAcademie).map(f => f.id));
-  const sc = D.seances.filter(s => s.statut === 'Tenue' && fset.has(s.formationId) && (fid ? s.formationId === fid : !hors.has(s.formationId)));
+  const sc = D.seances.filter(s => s.statut === 'Tenue' && fset.has(s.formationId) && (!fid || s.formationId === fid));
   const map = {}; D.presences.filter(p => p.email === email).forEach(p => map[p.seanceId] = p.statut);
   const r = { total: sc.length, P: 0, R: 0, A: 0, J: 0, NR: 0 };
   sc.forEach(s => { const st = map[s.id]; if (st && r[st] !== undefined) r[st]++; else r.NR++; });
@@ -528,6 +557,7 @@ async function render() {
     const D = await loadData();
     v.innerHTML = await PAGES[p](D);
     updateBell(); paintTheme();
+    reprendreExamen(D);
     window.scrollTo(0, 0);
   } catch (e) { console.error(e); v.innerHTML = `<div class="alert bad">${IC.alert}<div>Impossible de charger cette page : ${esc(e.message)}</div></div>`; }
 }
@@ -880,7 +910,7 @@ PAGES.exercices = D => {
   const list = D.exercices.filter(e => fids.includes(e.formationId) && (!S.fSel || e.formationId === S.fSel)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return `${roBanner()}<div class="toolbar">${formationFilter(D)}<span class="sp"></span>${can('exercices') ? `<button class="btn btn-p" data-act="exoForm">${IC.plus} Nouvel exercice</button>` : ''}</div>
   <div class="card tbl-wrap"><table><thead><tr><th>Exercice</th><th>Formation</th><th>Date</th><th>Barème</th><th>Notés</th><th>Moy. classe</th><th></th></tr></thead><tbody>
-  ${list.map(e => { const ins = enrolled(D, e.formationId), ns = D.notes.filter(n => n.exerciceId === e.id && n.note !== '' && n.note != null), mc = ns.length ? sum(ns, n => n.note) / ns.length : null; return `<tr><td><div class="strong">${esc(e.titre)}</div><div class="small muted">${esc(e.type || '')} · coef. ${esc(e.coef || 1)}</div></td><td>${esc(fName(D, e.formationId))}</td><td>${fShort(e.date)}</td><td>/${esc(e.bareme)}</td><td><span class="b ${ns.length >= ins.length && ins.length ? 'b-v' : 'b-o'}">${ns.length}/${ins.length}</span></td><td>${mc == null ? '—' : mc.toFixed(2) + '/' + e.bareme}</td><td class="right" style="white-space:nowrap">${e.source === 'quiz' ? `<a class="btn btn-o btn-s" href="#/quiz">${IC.check} Évaluation en ligne</a>` : can('exercices') ? `<button class="btn btn-g btn-s" data-act="notesForm" data-id="${e.id}">${IC.star} Saisir les notes</button> <button class="icon-btn" data-act="exoForm" data-id="${e.id}">${IC.edit}</button><button class="icon-btn" style="color:var(--rouge)" data-act="exoDel" data-id="${e.id}">${IC.trash}</button>` : `<button class="btn btn-o btn-s" data-act="notesVoir" data-id="${e.id}">${IC.eye}</button>`}</td></tr>`; }).join('') || `<tr><td colspan="7">${empty('Aucun exercice.', IC.star)}</td></tr>`}
+  ${list.map(e => { const ins = enrolled(D, e.formationId), ns = D.notes.filter(n => n.exerciceId === e.id && n.note !== '' && n.note != null), mc = ns.length ? sum(ns, n => n.note) / ns.length : null; return `<tr><td><div class="strong">${esc(e.titre)}</div><div class="small muted">${esc(e.type || '')} · coef. ${esc(e.coef || 1)}</div></td><td>${esc(fName(D, e.formationId))}</td><td>${fShort(e.date)}</td><td>/${esc(e.bareme)}</td><td><span class="b ${ns.length >= ins.length && ins.length ? 'b-v' : 'b-o'}">${ns.length}/${ins.length}</span></td><td>${mc == null ? '—' : mc.toFixed(2) + '/' + e.bareme}</td><td class="right" style="white-space:nowrap">${e.source === 'quiz' ? `<a class="btn btn-o btn-s" href="#/quiz">${IC.check} Évaluation en ligne</a>` : e.source === 'mgr' ? `<span class="b b-g" title="Notes saisies et validées dans CVPB Manager">CVPB Manager</span>` : can('exercices') ? `<button class="btn btn-g btn-s" data-act="notesForm" data-id="${e.id}">${IC.star} Saisir les notes</button> <button class="icon-btn" data-act="exoForm" data-id="${e.id}">${IC.edit}</button><button class="icon-btn" style="color:var(--rouge)" data-act="exoDel" data-id="${e.id}">${IC.trash}</button>` : `<button class="btn btn-o btn-s" data-act="notesVoir" data-id="${e.id}">${IC.eye}</button>`}</td></tr>`; }).join('') || `<tr><td colspan="7">${empty('Aucun exercice.', IC.star)}</td></tr>`}
   </tbody></table></div>`;
 };
 ACT.exoForm = d => {
@@ -1164,7 +1194,7 @@ function fusionQuiz(D, moi) {
   (D.quiz || []).filter(q => q.publie).forEach(q => {
     const eid = 'quiz_' + q.id, cle = (D.cles || []).find(c => c.id === q.id);
     D.exercices.push({ id: eid, formationId: q.formationId, titre: q.titre, type: 'Évaluation en ligne', date: q.limite || (q.publieLe || '').slice(0, 10) || TODAY(), bareme: 20, coef: +q.coef || 1, source: 'quiz', quizId: q.id });
-    if (cle && (cle.corrigePublie || !isStudent())) (D.reponses || []).filter(r => r.quizId === q.id).forEach(r => {
+    if (cle && (cle.corrigePublie || !isStudent())) (D.reponses || []).filter(r => r.quizId === q.id && repRendue(q, r)).forEach(r => {
       const c = corrigerQuiz(q, cle, r); if (c.manuel) return;
       D.notes.push({ id: 'qn_' + r.id, exerciceId: eid, formationId: q.formationId, email: r.email, note: c.note20, commentaire: 'Évaluation en ligne', source: 'quiz' });
     });
@@ -1211,7 +1241,7 @@ ACT.quizEdit = d => {
     if (x.type === 'trou') { let n = 0; return { ...x, enonce: String(x.enonce).replace(/\[\[(\d+)\]\]/g, () => '{{' + ((k || [])[n++] || []).join('|') + '}}'), k: null }; }
     return { ...x, k };
   }) : [{ type: 'qcm', enonce: '', options: ['', '', '', ''], k: 0, points: 1 }];
-  const meta = q ? { formationId: q.formationId, titre: q.titre, consignes: q.consignes || '', duree: q.duree || '', limite: q.limite || '', coef: q.coef || 1 } : { formationId: S.fSel || forms[0]?.id || '', titre: '', consignes: '', duree: '', limite: '', coef: 1 };
+  const meta = q ? { formationId: q.formationId, titre: q.titre, consignes: q.consignes || '', duree: q.duree || DUREE_DEF, sorties: q.sorties ?? SORTIES_DEF, limite: q.limite || '', coef: q.coef || 1 } : { formationId: S.fSel || forms[0]?.id || '', titre: '', consignes: '', duree: DUREE_DEF, sorties: SORTIES_DEF, limite: '', coef: 1 };
   const qHtml = (x, i) => {
     const opts = x.type === 'qcm' || x.type === 'multi' ? `<div style="margin-top:8px">${(x.options || []).map((o, j) => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="${x.type === 'qcm' ? 'radio' : 'checkbox'}" name="k${i}" data-k="${i}" value="${j}" ${x.type === 'qcm' ? (String(x.k) === String(j) ? 'checked' : '') : ((x.k || []).map(String).includes(String(j)) ? 'checked' : '')} title="Bonne réponse"><input class="inp" data-opt="${i}" data-j="${j}" value="${esc(o)}" placeholder="Réponse ${String.fromCharCode(65 + j)}"><button type="button" class="icon-btn" data-optdel="${i}" data-j="${j}">${IC.x}</button></div>`).join('')}<button type="button" class="btn btn-o btn-s" data-optadd="${i}">${IC.plus} Ajouter une réponse</button><div class="small muted" style="margin-top:4px">Cochez ${x.type === 'qcm' ? 'la bonne réponse' : 'toutes les bonnes réponses'}.</div></div>`
       : x.type === 'vf' ? `<div class="chk" style="margin-top:8px"><label><input type="radio" name="k${i}" data-k="${i}" value="0" ${String(x.k) === '0' ? 'checked' : ''}> Vrai est la bonne réponse</label><label><input type="radio" name="k${i}" data-k="${i}" value="1" ${String(x.k) === '1' ? 'checked' : ''}> Faux est la bonne réponse</label></div>`
@@ -1224,14 +1254,14 @@ ACT.quizEdit = d => {
   };
   const body = () => `<div class="frow"><div class="fld"><label>Formation <span style="color:var(--rouge)">*</span></label><select class="inp" id="qz_f">${forms.map(f => `<option value="${f.id}" ${meta.formationId === f.id ? 'selected' : ''}>${esc(f.titre)}</option>`).join('')}</select></div><div class="fld"><label>Titre <span style="color:var(--rouge)">*</span></label><input class="inp" id="qz_t" value="${esc(meta.titre)}" placeholder="Ex. : Quiz n°1 — Bases d'Excel"></div></div>
     <div class="fld"><label>Consignes</label><textarea class="inp" id="qz_c" rows="2">${esc(meta.consignes)}</textarea></div>
-    <div class="frow"><div class="fld"><label>Durée (minutes, vide = libre)</label><input class="inp" type="number" min="1" id="qz_d" value="${esc(meta.duree)}"></div><div class="fld"><label>À rendre avant le</label><input class="inp" type="date" id="qz_l" value="${esc(meta.limite)}"></div></div>
+    <div class="frow"><div class="fld"><label>Durée du chrono (minutes) <span style="color:var(--rouge)">*</span></label><input class="inp" type="number" min="1" max="240" id="qz_d" value="${esc(meta.duree)}"></div><div class="fld"><label>Sorties de page tolérées</label><select class="inp" id="qz_s">${[0, 1, 2, 3].map(n => `<option value="${n}" ${+meta.sorties === n ? 'selected' : ''}>${n === 0 ? 'Aucune : envoi dès la 1re sortie' : n + ' (envoi automatique à la ' + (n + 1) + 'e)'}</option>`).join('')}</select></div><div class="fld"><label>À rendre avant le</label><input class="inp" type="date" id="qz_l" value="${esc(meta.limite)}"></div></div>
     <div class="fld" style="max-width:200px"><label>Coefficient dans la moyenne</label><input class="inp" type="number" min="1" step="1" id="qz_k" value="${esc(meta.coef)}"></div>
     <h4 style="margin:10px 0">Questions</h4><div id="qz_qs">${Q.map(qHtml).join('')}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(Q_TYPES).map(([k, l]) => `<button type="button" class="btn btn-o btn-s" data-qadd="${k}">${IC.plus} ${l.split(' (')[0]}</button>`).join('')}</div>`;
   const m = openModal({ title: q ? 'Modifier l\'évaluation' : 'Nouvelle évaluation en ligne', wide: true, ok: 'Enregistrer (brouillon)', body: body(), onOk: async () => { sync(); return save(); } });
   const sync = () => {
     meta.formationId = m.querySelector('#qz_f')?.value || ''; meta.titre = m.querySelector('#qz_t').value.trim(); meta.consignes = m.querySelector('#qz_c').value.trim();
-    meta.duree = m.querySelector('#qz_d').value; meta.limite = m.querySelector('#qz_l').value; meta.coef = m.querySelector('#qz_k').value || 1;
+    meta.duree = m.querySelector('#qz_d').value; meta.sorties = +m.querySelector('#qz_s').value; meta.limite = m.querySelector('#qz_l').value; meta.coef = m.querySelector('#qz_k').value || 1;
     Q.forEach((x, i) => {
       x.enonce = m.querySelector(`[data-enonce="${i}"]`)?.value || ''; x.points = +(m.querySelector(`[data-pts="${i}"]`)?.value) || 1;
       if (x.type === 'qcm' || x.type === 'multi') { x.options = [...m.querySelectorAll(`[data-opt="${i}"]`)].map(e => e.value); const ch = [...m.querySelectorAll(`[data-k="${i}"]:checked`)].map(e => +e.value); x.k = x.type === 'qcm' ? (ch[0] ?? null) : ch; }
@@ -1251,6 +1281,7 @@ ACT.quizEdit = d => {
   wire();
   const save = async () => {
     if (!meta.formationId || !meta.titre) { toast('Choisissez la formation et donnez un titre.', 'bad'); return false; }
+    if (!(+meta.duree >= 1 && +meta.duree <= 240)) { toast('Indiquez la durée du chrono (1 à 240 minutes) : toutes les évaluations sont chronométrées.', 'bad'); return false; }
     if (!Q.length) { toast('Ajoutez au moins une question.', 'bad'); return false; }
     const pub = [], cles = [];
     for (const [i, x] of Q.entries()) {
@@ -1267,7 +1298,7 @@ ACT.quizEdit = d => {
         pub.push({ type: 'trou', enonce: txt, nbTrous: alts.length, points: x.points }); cles.push(alts);
       } else { pub.push({ type: x.type, enonce: x.enonce.trim(), points: x.points }); cles.push(x.type === 'courte' ? (x.k || '') : ''); }
     }
-    const data = { formationId: meta.formationId, titre: meta.titre, consignes: meta.consignes, duree: meta.duree ? +meta.duree : '', limite: meta.limite, coef: +meta.coef || 1, questions: pub, majLe: new Date().toISOString() };
+    const data = { formationId: meta.formationId, titre: meta.titre, consignes: meta.consignes, duree: +meta.duree, sorties: +meta.sorties || 0, limite: meta.limite, coef: +meta.coef || 1, questions: pub, majLe: new Date().toISOString() };
     let id = q?.id;
     if (id) await DB.update('quiz', id, data); else id = await DB.add('quiz', { ...data, publie: false, cloture: false, creeLe: new Date().toISOString(), creePar: S.user.email, creeParNom: S.user.nom });
     await DB.set('quiz_cles', id, { formationId: meta.formationId, cles, corrigePublie: cle?.corrigePublie || false });
@@ -1284,11 +1315,12 @@ ACT.quizCorr = d => {
 ACT.quizDel = d => confirmBox('Supprimer cette évaluation (aucune réponse reçue) ?', async () => { await DB.remove('quiz', d.id); await DB.remove('quiz_cles', d.id).catch(() => { }); toast('Évaluation supprimée'); rerender(); }, 'Supprimer');
 ACT.quizRes = d => {
   const D = S.D, q = D.quiz.find(x => x.id === d.id), cle = (D.cles || []).find(c => c.id === q.id), ins = enrolled(D, q.formationId);
-  openModal({ title: `Résultats — ${esc(q.titre)}`, wide: true, noFooter: true, body: `<div class="tbl-wrap"><table><thead><tr><th>Apprenant</th><th>Envoyé le</th><th>Points</th><th>Note /20</th><th></th></tr></thead><tbody>${ins.map(a => {
-    const r = (D.reponses || []).find(x => x.quizId === q.id && x.email === a.id); if (!r) return `<tr><td class="strong">${esc(a.nom)} ${esc(a.prenoms)}</td><td colspan="3"><span class="b b-g">Pas encore répondu</span></td><td></td></tr>`;
+  openModal({ title: `Résultats — ${esc(q.titre)}`, wide: true, noFooter: true, body: `<div class="tbl-wrap"><table><thead><tr><th>Apprenant</th><th>Envoyé le</th><th>Sorties</th><th>Points</th><th>Note /20</th><th></th></tr></thead><tbody>${ins.map(a => {
+    const r = (D.reponses || []).find(x => x.quizId === q.id && x.email === a.id); if (!r) return `<tr><td class="strong">${esc(a.nom)} ${esc(a.prenoms)}</td><td colspan="4"><span class="b b-g">Pas encore commencé</span></td><td></td></tr>`;
+    if (repEnCours(q, r)) return `<tr><td class="strong">${esc(a.nom)} ${esc(a.prenoms)}</td><td colspan="4"><span class="b b-b">En cours — fin du chrono à ${new Date(finTentative(q, r)).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span> ${sortiesBadge(r)}</td><td></td></tr>`;
     const c = corrigerQuiz(q, cle, r);
-    return `<tr><td class="strong">${esc(a.nom)} ${esc(a.prenoms)}</td><td class="small">${fDT(r.soumisLe)}</td><td>${c.pts}/${c.max}</td><td>${c.manuel ? '<span class="b b-r">À corriger</span>' : moyBadge(c.note20)}</td><td class="right">${can('quiz') ? `<button class="btn btn-o btn-s" data-act="quizCopie" data-id="${esc(r.id)}">${c.manuel ? 'Corriger' : 'Voir la copie'}</button>` : ''}</td></tr>`;
-  }).join('') || '<tr><td colspan="5" class="center muted">Aucun apprenant inscrit</td></tr>'}</tbody></table></div>` });
+    return `<tr><td class="strong">${esc(a.nom)} ${esc(a.prenoms)}</td><td class="small">${fDT(r.soumisLe || new Date(finTentative(q, r)).toISOString())}${r.motifEnvoi === 'temps' || (!r.soumisLe && r.statut === 'En cours') ? '<br><span class="muted">temps écoulé</span>' : r.motifEnvoi === 'sorties' ? '<br><span style="color:var(--rouge)">envoi forcé (sorties)</span>' : ''}</td><td>${sortiesBadge(r)}</td><td>${c.pts}/${c.max}</td><td>${c.manuel ? '<span class="b b-r">À corriger</span>' : moyBadge(c.note20)}</td><td class="right">${can('quiz') ? `<button class="btn btn-o btn-s" data-act="quizCopie" data-id="${esc(r.id)}">${c.manuel ? 'Corriger' : 'Voir la copie'}</button>` : ''}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="center muted">Aucun apprenant inscrit</td></tr>'}</tbody></table></div>` });
 };
 // Copie d'un apprenant : affichage + notation manuelle des questions rédigées / devoirs
 function copieHTML(q, cle, r, opts = {}) {
@@ -1316,47 +1348,132 @@ ACT.quizCopie = d => {
 PAGES.mesquiz = D => {
   const a = D.apprenants[0] || {}, me = S.user.email;
   const L = (D.quiz || []).filter(q => q.publie && (a.formations || []).includes(q.formationId)).sort((x, y) => (y.publieLe || '').localeCompare(x.publieLe || ''));
-  return `<div class="alert info">${IC.info}<div>Une seule tentative par évaluation. Votre note apparaît quand le formateur publie le corrigé ; elle compte alors dans votre moyenne.</div></div>
+  return `<div class="alert info">${IC.info}<div><b>Évaluations chronométrées, une seule tentative.</b> Le chrono démarre quand vous cliquez sur « Commencer » et ne s'arrête plus, même si vous fermez la page. Pendant l'épreuve, ne quittez pas la page : chaque sortie (autre onglet, autre application, fermeture) est enregistrée et vue par le formateur ; au-delà du nombre toléré, vos réponses sont envoyées automatiquement. Votre note apparaît quand le formateur publie le corrigé.</div></div>
   <div class="grid g2">${L.map(q => {
-    const r = (D.reponses || []).find(x => x.quizId === q.id), cle = (D.cles || []).find(c => c.id === q.id), c = r && cle ? corrigerQuiz(q, cle, r) : null;
+    const r = (D.reponses || []).find(x => x.quizId === q.id), cle = (D.cles || []).find(c => c.id === q.id), enc = repEnCours(q, r), c = r && !enc && cle ? corrigerQuiz(q, cle, r) : null;
     const expire = q.limite && q.limite < TODAY();
-    const etat = r ? (c ? (c.manuel ? '<span class="b b-o">Correction en cours</span>' : `<span class="b b-v">Note : ${c.note20.toFixed(2)}/20</span>`) : '<span class="b b-b">Envoyé — en attente du corrigé</span>') : q.cloture || expire ? '<span class="b b-r">Fermé — non rendu</span>' : '<span class="b b-o">À faire</span>';
-    return `<div class="card"><div class="card-b"><div style="margin-bottom:8px">${etat}</div><h3 style="font-size:15px">${esc(q.titre)}</h3><div class="small muted">${esc(fName(D, q.formationId))} · ${(q.questions || []).length} question(s)${q.duree ? ' · ' + q.duree + ' min' : ''}${q.limite ? ' · avant le ' + fDate(q.limite) : ''}</div>${q.consignes ? `<p class="small" style="margin-top:8px">${esc(q.consignes)}</p>` : ''}</div>
-      <div style="padding:12px 18px;border-top:1px solid var(--line)">${!r && !q.cloture && !expire ? `<button class="btn btn-p" data-act="quizPasser" data-id="${q.id}">${IC.check} Commencer</button>` : r && cle ? `<button class="btn btn-o" data-act="quizMaCopie" data-id="${q.id}">${IC.eye} Voir ma correction</button>` : ''}</div></div>`;
+    const etat = enc ? '<span class="b b-b">En cours — chrono actif</span>' : r ? (c ? (c.manuel ? '<span class="b b-o">Correction en cours</span>' : `<span class="b b-v">Note : ${c.note20.toFixed(2)}/20</span>`) : '<span class="b b-b">Envoyé — en attente du corrigé</span>') : q.cloture || expire ? '<span class="b b-r">Fermé — non rendu</span>' : '<span class="b b-o">À faire</span>';
+    return `<div class="card"><div class="card-b"><div style="margin-bottom:8px">${etat}</div><h3 style="font-size:15px">${esc(q.titre)}</h3><div class="small muted">${esc(fName(D, q.formationId))} · ${(q.questions || []).length} question(s) · ⏱ ${dureeQ(q)} min${q.limite ? ' · avant le ' + fDate(q.limite) : ''}</div>${q.consignes ? `<p class="small" style="margin-top:8px">${esc(q.consignes)}</p>` : ''}</div>
+      <div style="padding:12px 18px;border-top:1px solid var(--line)">${enc ? `<button class="btn btn-p" data-act="quizPasser" data-id="${q.id}">${IC.clock} Reprendre (chrono en cours)</button>` : !r && !q.cloture && !expire ? `<button class="btn btn-p" data-act="quizPasser" data-id="${q.id}">${IC.check} Commencer</button>` : r && c && cle ? `<button class="btn btn-o" data-act="quizMaCopie" data-id="${q.id}">${IC.eye} Voir ma correction</button>` : ''}</div></div>`;
   }).join('') || `<div class="card">${empty('Aucune évaluation en ligne pour vos formations.', IC.check)}</div>`}</div>`;
 };
 ACT.quizMaCopie = d => { const D = S.D, q = D.quiz.find(x => x.id === d.id), cle = D.cles.find(c => c.id === q.id), r = D.reponses.find(x => x.quizId === q.id), c = corrigerQuiz(q, cle, r); openModal({ title: `${esc(q.titre)} — ${c.manuel ? 'correction en cours' : c.note20.toFixed(2) + '/20'}`, wide: true, noFooter: true, body: copieHTML(q, cle, r) }); };
+// ===== Épreuve chronométrée et surveillée =====
+// - Le chrono démarre à « Commencer » (heure enregistrée sur le serveur) et ne s'arrête plus : fermer ou recharger ne le remet pas à zéro.
+// - Une seule tentative ; brouillon enregistré automatiquement ; envoi automatique à la fin du chrono.
+// - Plein écran ; chaque sortie (autre onglet/appli, sortie du plein écran, retour arrière, rechargement) est comptée,
+//   enregistrée et visible par le formateur ; au-delà du nombre toléré, envoi automatique.
+// Limite technique : une page web ne peut pas bloquer physiquement le téléphone (bouton d'accueil, fermeture du navigateur) ;
+// elle détecte et sanctionne la sortie.
+const DUREE_DEF = 30, SORTIES_DEF = 2;
+const dureeQ = q => +q?.duree || DUREE_DEF;
+const finTentative = (q, r) => (+r?.debutMs || 0) + dureeQ(q) * 60000;
+const repEnCours = (q, r) => !!r && r.statut === 'En cours' && Date.now() < finTentative(q, r);
+const repRendue = (q, r) => !!r && !repEnCours(q, r);
+const sortiesBadge = r => { const n = (r?.sorties || []).length; return n ? `<span class="b b-r" title="${esc((r.sorties || []).map(x => fDT(x.le) + ' · ' + x.type).join('\n'))}">${n} sortie(s)</span>` : '<span class="b b-v">0</span>'; };
+let EXAM = null;
+function reprendreExamen(D) {
+  if (!isStudent() || EXAM) return;
+  const r = (D.reponses || []).find(x => { const q = (D.quiz || []).find(y => y.id === x.quizId); return q && repEnCours(q, x); });
+  if (r) { toast('Évaluation en cours : le chrono a continué pendant votre absence.', 'bad'); ACT.quizPasser({ id: r.quizId, reprise: true }); }
+}
 ACT.quizPasser = d => {
-  const D = S.D, q = D.quiz.find(x => x.id === d.id); let fini = false, timer = null;
+  const D = S.D, q = D.quiz.find(x => x.id === d.id); if (!q || EXAM) return;
+  const id = repId(q.id, S.user.email);
+  let r = (D.reponses || []).find(x => x.quizId === q.id);
+  if (r && !repEnCours(q, r)) { toast('Cette évaluation est déjà rendue.', 'bad'); return; }
+  if (r) return lancerExamen(q, r, true);
+  confirmBox(`<b>${esc(q.titre)}</b><br><br>⏱ Chrono : <b>${dureeQ(q)} minutes</b>. Il démarre dès que vous cliquez et <b>ne s'arrête plus</b>.<br>📵 Restez sur cette page jusqu'à la fin. Toute sortie (autre onglet, autre application, retour, fermeture) est enregistrée et signalée au formateur. ${+q.sorties > 0 ? `Au-delà de <b>${+q.sorties} sortie(s)</b>, vos réponses sont envoyées automatiquement.` : '<b>La première sortie envoie automatiquement vos réponses.</b>'}<br>🔁 Une seule tentative.<br><br>Vérifiez votre connexion et votre batterie avant de commencer.`, async () => {
+    const debutMs = Date.now();
+    r = { id, quizId: q.id, formationId: q.formationId, email: S.user.email, statut: 'En cours', debutMs, debutLe: new Date(debutMs).toISOString(), reponses: [], sorties: [] };
+    try { await DB.set('reponses', id, { ...r }); } catch (e) { toast('Impossible de démarrer (connexion ?) : ' + e.message, 'bad'); return; }
+    D.reponses = [...(D.reponses || []).filter(x => x.id !== id), r];
+    lancerExamen(q, r, false);
+  }, 'Commencer le chrono', 'btn-p');
+};
+function lancerExamen(q, r, reprise) {
+  const tol = q.sorties ?? SORTIES_DEF, fin = finTentative(q, r);
   const qs = (q.questions || []).map((x, i) => {
+    const prev = r.reponses?.[i];
     const head = `<div style="display:flex;gap:8px;margin-bottom:8px"><b>Q${i + 1}.</b><div style="flex:1">${x.type === 'trou' ? 'Complétez :' : esc(x.enonce)}</div><span class="b b-p">${x.points || 1} pt</span></div>`;
     let f = '';
-    if (x.type === 'qcm' || x.type === 'vf') f = (x.options || []).map((o, j) => `<label class="appel-row" style="cursor:pointer;gap:10px"><input type="radio" name="r${i}" value="${j}"> ${esc(o)}</label>`).join('');
-    else if (x.type === 'multi') f = `<div class="small muted">Plusieurs réponses possibles.</div>` + (x.options || []).map((o, j) => `<label class="appel-row" style="cursor:pointer;gap:10px"><input type="checkbox" name="r${i}" value="${j}"> ${esc(o)}</label>`).join('');
-    else if (x.type === 'trou') { let n = 0; f = `<div style="line-height:2.4">${esc(x.enonce).replace(/\[\[(\d+)\]\]/g, () => `<input class="inp" style="display:inline-block;width:150px;padding:6px 8px" data-trou="${i}" data-j="${n++}" autocomplete="off">`)}</div>`; }
-    else if (x.type === 'lien') f = `<input class="inp" type="url" name="r${i}" placeholder="https:// (lien Google Drive, GitHub, Canva…)">`;
-    else f = `<textarea class="inp" rows="4" name="r${i}" placeholder="Votre réponse"></textarea>`;
+    if (x.type === 'qcm' || x.type === 'vf') f = (x.options || []).map((o, j) => `<label class="appel-row" style="cursor:pointer;gap:10px"><input type="radio" name="r${i}" value="${j}" ${String(prev) === String(j) ? 'checked' : ''}> ${esc(o)}</label>`).join('');
+    else if (x.type === 'multi') f = `<div class="small muted">Plusieurs réponses possibles.</div>` + (x.options || []).map((o, j) => `<label class="appel-row" style="cursor:pointer;gap:10px"><input type="checkbox" name="r${i}" value="${j}" ${(prev || []).map(String).includes(String(j)) ? 'checked' : ''}> ${esc(o)}</label>`).join('');
+    else if (x.type === 'trou') { let n = 0; f = `<div style="line-height:2.4">${esc(x.enonce).replace(/\[\[(\d+)\]\]/g, () => { const j = n++; return `<input class="inp" style="display:inline-block;width:150px;padding:6px 8px" data-trou="${i}" data-j="${j}" autocomplete="off" value="${esc(prev?.[j] || '')}">`; })}</div>`; }
+    else if (x.type === 'lien') f = `<input class="inp" type="url" name="r${i}" placeholder="https:// (lien Google Drive, GitHub, Canva…)" value="${esc(prev || '')}">`;
+    else f = `<textarea class="inp" rows="4" name="r${i}" placeholder="Votre réponse">${esc(prev || '')}</textarea>`;
     return `<div class="card" style="margin-bottom:12px"><div class="card-b">${head}${f}</div></div>`;
   }).join('');
-  const m = openModal({ title: esc(q.titre), wide: true, ok: 'Envoyer mes réponses', okClass: 'btn-g',
-    body: `${q.consignes ? `<div class="alert info">${IC.info}<div>${esc(q.consignes)}</div></div>` : ''}${q.duree ? `<div class="alert warn" id="qzTimer">${IC.clock}<div>Temps restant : <b id="qzT">${q.duree}:00</b> — envoi automatique à la fin.</div></div>` : ''}${qs}`,
-    onOk: async () => envoyer(false) });
+  const ov = document.createElement('div'); ov.id = 'examen';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg);overflow:auto;-webkit-user-select:none;user-select:none';
+  ov.innerHTML = `<div style="position:sticky;top:0;z-index:2;background:var(--violet,#3C1776);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.2)">
+      <div style="flex:1;min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(q.titre)}</div><div style="font-size:12px;opacity:.85">Épreuve surveillée · sorties : <b id="exS">${(r.sorties || []).length}</b>/${tol}</div></div>
+      <div style="text-align:right"><div style="font-size:11px;opacity:.85">Temps restant</div><div id="exT" style="font:700 24px/1 monospace">--:--</div></div></div>
+    <div id="exW" style="display:none;margin:12px 16px 0" class="alert bad"></div>
+    <div style="max-width:820px;margin:0 auto;padding:16px">${q.consignes ? `<div class="alert info">${IC.info}<div>${esc(q.consignes)}</div></div>` : ''}${qs}
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding:8px 0 40px"><span class="small muted" id="exSv" style="align-self:center"></span><button class="btn btn-g" id="exOk">Envoyer mes réponses</button></div></div>`;
+  document.body.appendChild(ov);
   const lire = () => (q.questions || []).map((x, i) => {
-    if (x.type === 'qcm' || x.type === 'vf') { const c = m.querySelector(`[name="r${i}"]:checked`); return c ? +c.value : null; }
-    if (x.type === 'multi') return [...m.querySelectorAll(`[name="r${i}"]:checked`)].map(e => +e.value);
-    if (x.type === 'trou') return [...m.querySelectorAll(`[data-trou="${i}"]`)].map(e => e.value.trim());
-    return (m.querySelector(`[name="r${i}"]`)?.value || '').trim();
+    if (x.type === 'qcm' || x.type === 'vf') { const c = ov.querySelector(`[name="r${i}"]:checked`); return c ? +c.value : null; }
+    if (x.type === 'multi') return [...ov.querySelectorAll(`[name="r${i}"]:checked`)].map(e => +e.value);
+    if (x.type === 'trou') return [...ov.querySelectorAll(`[data-trou="${i}"]`)].map(e => e.value.trim());
+    return (ov.querySelector(`[name="r${i}"]`)?.value || '').trim();
   });
-  const envoyer = async (auto) => {
-    if (fini) return; const reps = lire();
-    const vides = reps.filter(r => r == null || r === '' || (Array.isArray(r) && (!r.length || r.every(v => v === '')))).length;
-    if (!auto && vides && !window.__qzOk) { window.__qzOk = true; toast(`${vides} question(s) sans réponse. Cliquez encore sur « Envoyer » pour confirmer.`, 'bad'); setTimeout(() => window.__qzOk = false, 6000); return false; }
-    fini = true; clearInterval(timer);
-    await DB.set('reponses', repId(q.id, S.user.email), { quizId: q.id, formationId: q.formationId, email: S.user.email, reponses: reps, soumisLe: new Date().toISOString(), auto: !!auto });
-    toast(auto ? 'Temps écoulé : vos réponses ont été envoyées.' : 'Réponses envoyées ✅', 'ok'); closeModal(); rerender();
+  const st = { fini: false, timer: null, auto: null, derniere: 0, sorties: [...(r.sorties || [])], okArm: false };
+  EXAM = st;
+  const brouillon = async () => { if (st.fini) return; try { await DB.set('reponses', r.id, { reponses: lire(), majLe: new Date().toISOString() }); const el = ov.querySelector('#exSv'); if (el) el.textContent = 'Brouillon enregistré ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); } catch (e) { } };
+  const nettoyer = () => {
+    clearInterval(st.timer); clearInterval(st.auto);
+    document.removeEventListener('visibilitychange', onVis); window.removeEventListener('blur', onBlur); document.removeEventListener('fullscreenchange', onFs);
+    window.removeEventListener('beforeunload', onUnload); window.removeEventListener('popstate', onPop); document.removeEventListener('keydown', onKey, true);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
+    ov.remove(); EXAM = null;
   };
-  if (q.duree) { const fin = Date.now() + q.duree * 60000; timer = setInterval(() => { const s = Math.max(0, Math.round((fin - Date.now()) / 1000)); const el = m.querySelector('#qzT'); if (el) el.textContent = `${Math.floor(s / 60)}:${pad(s % 60)}`; if (!s) envoyer(true).catch(e => toast(e.message, 'bad')); if (!document.body.contains(m) || m.classList.contains('hidden')) clearInterval(timer); }, 1000); }
-};
+  const envoyer = async (auto, motif) => {
+    if (st.fini) return; const reps = lire();
+    if (!auto) {
+      const vides = reps.filter(x => x == null || x === '' || (Array.isArray(x) && (!x.length || x.every(v => v === '')))).length;
+      if (vides && !st.okArm) { st.okArm = true; toast(`${vides} question(s) sans réponse. Cliquez encore sur « Envoyer » pour confirmer.`, 'bad'); setTimeout(() => st.okArm = false, 6000); return; }
+    }
+    st.fini = true;
+    const data = { reponses: reps, statut: 'Envoyé', soumisLe: new Date().toISOString(), auto: !!auto, motifEnvoi: motif || 'eleve', sorties: st.sorties };
+    try { await DB.set('reponses', r.id, data); }
+    catch (e) { st.fini = false; toast('Envoi impossible (connexion ?). Vos réponses restent enregistrées en brouillon ; réessayez.', 'bad'); return; }
+    Object.assign(r, data); nettoyer();
+    toast(motif === 'temps' ? 'Temps écoulé : vos réponses ont été envoyées.' : motif === 'sorties' ? 'Trop de sorties de la page : vos réponses ont été envoyées automatiquement.' : 'Réponses envoyées ✅', motif ? 'bad' : 'ok');
+    rerender();
+  };
+  const sortie = (type) => {
+    if (st.fini || Date.now() - st.derniere < 2000) return; st.derniere = Date.now();
+    st.sorties.push({ le: new Date().toISOString(), type });
+    ov.querySelector('#exS').textContent = st.sorties.length;
+    DB.set('reponses', r.id, { sorties: st.sorties, reponses: lire(), majLe: new Date().toISOString() }).catch(() => { });
+    if (st.sorties.length > tol) { envoyer(true, 'sorties'); return; }
+    const w = ov.querySelector('#exW'); w.style.display = ''; w.innerHTML = `${IC.alert}<div><b>Sortie de l'épreuve détectée (${type}).</b> Elle est enregistrée et signalée au formateur. ${st.sorties.length >= tol ? '<b>Prochaine sortie : envoi automatique de vos réponses.</b>' : `Encore ${tol - st.sorties.length} sortie(s) tolérée(s).`}</div>`;
+    pleinEcran();
+  };
+  const pleinEcran = () => { const el = document.documentElement; if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => { }); };
+  const onVis = () => { if (document.hidden) sortie('changement d\'onglet ou d\'application'); };
+  const onBlur = () => setTimeout(() => { if (!document.hasFocus() && !st.fini) sortie('fenêtre quittée'); }, 300);
+  const onFs = () => { if (!document.fullscreenElement && !st.fini) sortie('sortie du plein écran'); };
+  const onUnload = e => { if (st.fini) return; brouillon(); e.preventDefault(); e.returnValue = 'Épreuve en cours : le chrono continue et la sortie sera enregistrée.'; return e.returnValue; };
+  const onPop = () => { if (st.fini) return; history.pushState({ examen: 1 }, '', location.href); sortie('retour arrière'); };
+  const onKey = e => { if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && ['r', 'w', 't', 'n', 'c', 'v', 'x', 'p', 'u'].includes(e.key.toLowerCase()))) { e.preventDefault(); e.stopPropagation(); } };
+  ['copy', 'cut', 'paste', 'contextmenu', 'dragstart'].forEach(t => ov.addEventListener(t, e => e.preventDefault()));
+  document.addEventListener('visibilitychange', onVis); window.addEventListener('blur', onBlur); document.addEventListener('fullscreenchange', onFs);
+  window.addEventListener('beforeunload', onUnload); window.addEventListener('popstate', onPop); document.addEventListener('keydown', onKey, true);
+  history.pushState({ examen: 1 }, '', location.href);
+  ov.querySelector('#exOk').onclick = () => envoyer(false);
+  ov.addEventListener('change', () => { clearTimeout(st.deb); st.deb = setTimeout(brouillon, 1500); });
+  ov.addEventListener('input', () => { clearTimeout(st.deb); st.deb = setTimeout(brouillon, 4000); });
+  st.auto = setInterval(brouillon, 20000);
+  const tick = () => { const sec = Math.max(0, Math.round((fin - Date.now()) / 1000)); const el = ov.querySelector('#exT'); if (el) { el.textContent = `${Math.floor(sec / 60)}:${pad(sec % 60)}`; el.style.color = sec <= 60 ? '#ffb4b4' : ''; } if (!sec) envoyer(true, 'temps'); };
+  tick(); st.timer = setInterval(tick, 1000);
+  // Reprise : une seule sortie comptée (la fermeture a souvent déjà été enregistrée juste avant)
+  if (reprise) { const der = st.sorties[st.sorties.length - 1]; if (!der || Date.now() - new Date(der.le).getTime() > 15000) sortie('page fermée ou rechargée'); else { const w = ov.querySelector('#exW'); w.style.display = ''; w.innerHTML = `${IC.alert}<div><b>Vous avez quitté l'épreuve</b> : la sortie est enregistrée et le chrono a continué.</div>`; } }
+  if (st.fini) return;
+  pleinEcran();
+}
 
 // ------------------------------------------------------------
 // 9. CONNEXION
@@ -1509,6 +1626,7 @@ function seedDemo() {
     { id: 'MS1', date: past[1], formation: 'L1-01', presences: pres(['P', 'P', 'R', 'P', 'A', 'P', 'P', 'J']), validation: { statut: 'Validée' } },
     { id: 'MS2', date: past[past.length - 1], formation: 'L1-01', presences: pres(['P', 'A', 'P', 'P', 'A', 'R', 'P', 'P']), validation: { statut: 'Soumise' } }
   ];
+  const mgr_notes = etudiants.slice(0, 3).map((e, i) => ({ id: 'L1-01_' + e.id, matricule: e.id, formation: 'L1-01', intitule: 'Initiation aux outils Office', evals: [{ id: 'EVtp1', libelle: 'TP Word : mise en page', type: 'Travaux pratiques', coef: 1, date: past[1], note: [14, 11.5, 'ABS'][i] }, { id: 'EVsp1', libelle: 'Séance pratique Excel', type: 'Séance pratique', coef: 2, date: past[past.length - 1], note: [16, 13, 9][i] }], moyenne: [15.33, 12.5, 6][i], publieLe: iso(3), publiePar: 'Responsable Formation' }));
   const mgr_programme = [
     { id: 'PG1', type: 'academie', formation: 'L1-01', titre: 'Excel : tableaux et formules', date: fut[0], hDebut: '09:00', hFin: '11:00', mode: 'Présentiel', lieu: 'Salle CVPB, Port-Bouët', statut: 'Programmée', historique: [{}], creeLe: new Date(Date.now() - 2 * 3600e3).toISOString() },
     { id: 'PG2', type: 'tutorat', formation: '', titre: 'Tutorat (ne concerne pas l\'Académie)', date: fut[0], statut: 'Programmée' }
@@ -1533,5 +1651,5 @@ function seedDemo() {
     { id: 'qz2', formationId: 'f3', titre: 'Devoir : affiche de la CVPB Académie', consignes: 'Réalisez une affiche sur Canva et déposez le lien de partage.', duree: '', limite: fut[1] || fut[0], coef: 2, publie: true, cloture: false, publieLe: iso(4), creeLe: iso(5), creePar: 'demo.formateur' + dom, questions: [{ type: 'lien', enonce: 'Lien de votre affiche (Canva, Drive…)', points: 20 }] }];
   const quiz_cles = [{ id: 'qz1', formationId: 'f2', cles: [0, 0, [0, 1, 3], [['figer'], ['MOYENNE', 'moyenne()']], 'Résumer et analyser de grandes données ; regrouper, filtrer, calculer des totaux.'], corrigePublie: false }, { id: 'qz2', formationId: 'f3', cles: [''], corrigePublie: false }];
   const reponses = apprenants.filter(a => a.formations.includes('f2')).slice(2, 6).map((a, i) => ({ id: repId('qz1', a.id), quizId: 'qz1', formationId: 'f2', email: a.id, reponses: [i % 3 ? 0 : 1, 0, i % 2 ? [0, 1, 3] : [0, 1], ['figer', i % 2 ? 'MOYENNE' : 'somme'], 'Il sert à résumer un grand tableau de données.'], soumisLe: iso(20 - i), ...(i < 2 ? { manuel: { 4: 2 + i } } : {}) }));
-  return { mgr_pt_tut, mgr_pt_com, quiz, quiz_cles, reponses, infos, validations, mgr_formations, mgr_seances, mgr_programme, settings: [{ id: 'general', ...DEFAULT_SETTINGS }], users, formations, etudiants, apprenants, seances, presences, exercices, notes, encaissements, sanctions, activites, notifications, annonces: [{ id: 'an1', titre: 'Nouvelle activité : Atelier CV & LinkedIn', message: 'Inscrivez-vous auprès de votre délégué.', cible: 'Tous les apprenants', nb: 11, date: iso(20), par: 'demo.sg1' + dom }] };
+  return { mgr_notes, mgr_pt_tut, mgr_pt_com, quiz, quiz_cles, reponses, infos, validations, mgr_formations, mgr_seances, mgr_programme, settings: [{ id: 'general', ...DEFAULT_SETTINGS }], users, formations, etudiants, apprenants, seances, presences, exercices, notes, encaissements, sanctions, activites, notifications, annonces: [{ id: 'an1', titre: 'Nouvelle activité : Atelier CV & LinkedIn', message: 'Inscrivez-vous auprès de votre délégué.', cible: 'Tous les apprenants', nb: 11, date: iso(20), par: 'demo.sg1' + dom }] };
 }
