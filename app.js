@@ -121,8 +121,8 @@ const SHORT = { mesquiz: 'Quiz', quiz: 'Quiz', informations: 'Infos', validation
 // Droits particuliers : Informations = commission COMMUNICATION de CVPB Manager + Président ;
 // Validation des séances = valideurs désignés dans Paramètres (séances Académie) + Président (tout).
 const peutInfo = () => S.role === 'president' || !!S.user?.comm;
-const peutValider = type => S.role === 'president' || (type !== 'communaute' && (S.D.settings?.valideurs || []).includes(S.user?.email));
-const can = page => page === 'informations' ? peutInfo() : page === 'validations' ? peutValider('academie') : (EDIT[S.role] || []).includes(page);
+const peutValider = type => S.role === 'president' || (type === 'academie' && (S.D.settings?.valideurs || []).includes(S.user?.email)) || (type === 'tutorat' && (S.D.settings?.valideursTutorat || []).includes(S.user?.email));
+const can = page => page === 'informations' ? peutInfo() : page === 'validations' ? (peutValider('academie') || peutValider('tutorat')) : (EDIT[S.role] || []).includes(page);
 const seesFinance = () => FIN_ROLES.includes(S.role);
 const isStudent = () => S.role === 'etudiant';
 
@@ -156,14 +156,15 @@ function acaRole(u) {
 // celles de CVPB Manager. « etudiants » et « encaissements » sont LUES dans CVPB Manager (lecture seule).
 const EXTERNES = ['etudiants', 'encaissements', 'users'];
 // Collections de CVPB Manager lues par l'Académie sous un autre nom (lecture seule)
-const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme' };
+const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme', mgr_pt_tut: 'pointages_tutorat', mgr_pt_com: 'pointages_communaute' };
+const TYPES_PROG = ['academie', 'tutorat', 'communaute'];
 const QUIZ_ROLES = ['president', 'vp', 'resp_formation', 'resp_suivi', 'formateur'];
 const PHYS = c => PHYS_MAP[c] || (EXTERNES.includes(c) ? c : 'aca_' + c);
 const CODES_PRES = ['P', 'R', 'J', 'A'];
 const COLS = ['settings', 'users', 'formations', 'apprenants', 'seances', 'presences', 'exercices', 'notes', 'paiements', 'caisse', 'sanctions', 'activites', 'notifications', 'annonces'];
 
 const DemoDB = {
-  KEY: 'cvpba_demo_v6',
+  KEY: 'cvpba_demo_v7',
   data: null,
   load() { try { this.data = JSON.parse(localStorage.getItem(this.KEY)); } catch { this.data = null; } if (!this.data) { this.data = seedDemo(); this.save(); } },
   save() { try { localStorage.setItem(this.KEY, JSON.stringify(this.data)); } catch { } },
@@ -221,8 +222,11 @@ async function loadData(force = false) {
     D.encaissements = lk ? (await safe(DB.list('encaissements', { matricule: lk.matricule }))).filter(VALIDE) : [];
     // Pointages faits dans CVPB Manager : uniquement les séances où CET étudiant est pointé
     D.mgrSeances = lk ? await safe(DB.listIn('mgr_seances', ['presences', lk.matricule], CODES_PRES)) : [];
+    // Pointages du tutorat et des activités de la communauté (CVPB Manager) où CET étudiant figure
+    D.mgrPtTut = lk ? await safe(DB.listIn('mgr_pt_tut', ['presences', lk.matricule], CODES_PRES)) : [];
+    D.mgrPtCom = lk ? await safe(DB.listIn('mgr_pt_com', ['presences', lk.matricule], CODES_PRES)) : [];
     D.mgrFormations = await safe(DB.list('mgr_formations'));
-    D.mgrProgramme = lk ? await safe(DB.listIn('mgr_programme', ['type'], ['academie', 'communaute'])) : [];
+    D.mgrProgramme = lk ? await safe(DB.listIn('mgr_programme', ['type'], TYPES_PROG)) : [];
     // Évaluations en ligne : quiz publiés, corrigés publiés, et SES réponses
     D.quiz = await safe(DB.list('quiz', { publie: true }));
     D.cles = await safe(DB.list('quiz_cles', { corrigePublie: true }));
@@ -236,8 +240,10 @@ async function loadData(force = false) {
     D.encaissements = seesFinance() ? (await safe(DB.list('encaissements'))).filter(VALIDE) : [];
     const lisentPointages = ['president', 'vp', 'sg', 'resp_formation', 'resp_suivi', 'formateur'].includes(r);
     D.mgrSeances = lisentPointages ? await safe(DB.list('mgr_seances')) : [];
+    D.mgrPtTut = lisentPointages ? await safe(DB.list('mgr_pt_tut')) : [];
+    D.mgrPtCom = lisentPointages ? await safe(DB.list('mgr_pt_com')) : [];
     D.mgrFormations = await safe(DB.list('mgr_formations'));
-    D.mgrProgramme = await safe(DB.listIn('mgr_programme', ['type'], ['academie', 'communaute']));
+    D.mgrProgramme = await safe(DB.listIn('mgr_programme', ['type'], TYPES_PROG));
     const lisentQuiz = QUIZ_ROLES.includes(r);
     D.quiz = lisentQuiz ? await safe(DB.list('quiz')) : [];
     D.cles = lisentQuiz ? await safe(DB.list('quiz_cles')) : [];
@@ -247,6 +253,7 @@ async function loadData(force = false) {
   const n2 = await safe(DB.list('notifications', { dest: 'all' }));
   // Les paiements sont saisis dans CVPB Manager : chaque encaissement devient une notification pour l'étudiant
   fusionPointages(D);
+  fusionPointagesHorsAcademie(D);
   const n5 = fusionProgramme(D, r === 'etudiant' ? me : null);
   const n6 = fusionQuiz(D, r === 'etudiant' ? me : null);
   const n7 = (D.infos || []).filter(i => r !== 'etudiant' || infoPourMoi(D, i)).map(i => ({ id: 'inf_' + i.id, local: true, dest: me, cat: 'info', titre: (i.epingle ? '📌 ' : '') + i.titre, message: String(i.contenu || '').slice(0, 160), date: i.date || '' }));
@@ -283,11 +290,31 @@ function fusionPointages(D) {
 // - type « communaute » : validées par le Président.
 // Tant qu'une séance n'est pas validée, les apprenants ne la voient pas et ne sont pas notifiés.
 // Apprenants concernés (Académie) : inscrits à la formation liée au code ; sinon tous ceux du niveau de la formation.
+// Tutorat et activités de la communauté (CVPB Manager) : suivis à part, hors moyenne d'assiduité de l'Académie
+const codeSpec = x => (String(x || '').match(/\(([A-Z]{2,5}-[A-Z]{2,5})\)/) || String(x || '').match(/^([A-Z]{2,5}-[A-Z]{2,5})/) || [])[1] || '';
+const specsProg = p => (p.specialites || []).length ? p.specialites : [p.specialite].filter(Boolean);
+function formationHors(D, kind) {
+  const id = 'x_' + kind;
+  if (!D.formations.some(f => f.id === id)) D.formations.push({ id, titre: kind === 'tutorat' ? 'Tutorat (séances d\'explication)' : 'Activités de la communauté', domaine: 'CVPB Manager', niveau: 'Tous niveaux', formateurNom: '', statut: 'En cours', source: 'mgr', horsAcademie: true });
+  return id;
+}
+function fusionPointagesHorsAcademie(D) {
+  const byMat = {}; D.apprenants.forEach(a => byMat[a.matricule] = a);
+  [['tutorat', D.mgrPtTut], ['communaute', D.mgrPtCom]].forEach(([kind, L]) => (L || []).filter(pt => pt.date).forEach(pt => {
+    const fid = formationHors(D, kind), sid = 'pt_' + kind + '_' + pt.id;
+    D.seances.push({ id: sid, formationId: fid, date: pt.date, theme: pt.titre || (kind === 'tutorat' ? 'Séance de tutorat' : 'Activité'), statut: 'Tenue', source: 'mgr' });
+    Object.entries(pt.presences || {}).forEach(([mat, c]) => {
+      const a = byMat[mat]; if (!a || !CODES_PRES.includes(c)) return;
+      D.presences.push({ id: sid + '_' + mat, seanceId: sid, formationId: fid, email: a.id, statut: c, date: pt.date, source: 'mgr' });
+      if (!(a.formations || []).includes(fid)) a.formations = [...(a.formations || []), fid];
+    });
+  }));
+}
 const validationDe = (D, id) => (D.validations || []).find(v => v.id === id);
 function fusionProgramme(D, moi) {
   const notifs = [], t = TODAY();
   const lien = {}; D.formations.forEach(f => { if (f.codeCVPB && f.source !== 'mgr') lien[f.codeCVPB] = f.id; });
-  (D.mgrProgramme || []).filter(p => ['academie', 'communaute'].includes(p.type) && p.date && p.statut !== 'Tenue').forEach(p => {
+  (D.mgrProgramme || []).filter(p => TYPES_PROG.includes(p.type) && p.date && p.statut !== 'Tenue').forEach(p => {
     const v = validationDe(D, p.id);
     if (!v || v.statut !== 'Validée') return;
     const annulee = p.statut === 'Annulée', heure = [p.hDebut, p.hFin].filter(Boolean).join(' – ');
@@ -296,6 +323,16 @@ function fusionProgramme(D, moi) {
     if (p.type === 'communaute') {
       D.activites.push({ id: 'prog_' + p.id, titre: (annulee ? '[Annulée] ' : '') + (p.titre || 'Activité de la communauté'), type: 'Communauté', date: p.date, heure, lieu: [p.mode, p.lieu].filter(Boolean).join(' · '), description: p.description || '', source: 'mgr' });
       if (moi && p.date >= t) notifs.push({ id: `pg_${p.id}_${p.date}_${p.hDebut || ''}_${p.statut || ''}`, local: true, dest: moi, cat: 'activite', titre: titreNotif, message: `${p.titre || 'Activité'} · ${fDate(p.date)}${heure ? ', ' + heure : ''}${p.lieu ? ' · ' + p.lieu : ''}${annulee && p.motif ? ' · Motif : ' + p.motif : ''}`, date: v.le || p.majLe || new Date().toISOString() });
+      return;
+    }
+    if (p.type === 'tutorat') {
+      const codes = specsProg(p).map(codeSpec).filter(Boolean);
+      const concernes = actifsAca(D).filter(a => a.niveau === p.niveau && codes.includes(codeSpec(a.specialite)));
+      if (!concernes.length) return;
+      const fid = formationHors(D, 'tutorat'), groupes = `${codes.join(' + ')} ${p.niveau || ''}`.trim();
+      D.seances.push({ id: 'prog_' + p.id, formationId: fid, date: p.date, heure, theme: `${p.titre || 'Tutorat'} (${groupes})`, lieu: [p.mode, p.lieu].filter(Boolean).join(' · '), lien: p.lien || '', statut: annulee ? 'Annulée' : 'Programmée', source: 'mgr' });
+      concernes.forEach(a => { if (!(a.formations || []).includes(fid)) a.formations = [...(a.formations || []), fid]; });
+      if (moi && concernes.some(a => a.id === moi) && p.date >= t) notifs.push({ id: `pg_${p.id}_${p.date}_${p.hDebut || ''}_${p.statut || ''}`, local: true, dest: moi, cat: 'activite', titre: annulee ? 'Séance de tutorat annulée' : modif ? 'Séance de tutorat modifiée ou reportée' : 'Nouvelle séance de tutorat', message: `${p.titre || 'Tutorat'} · ${groupes} · ${fDate(p.date)}${heure ? ', ' + heure : ''}${p.lieu ? ' · ' + p.lieu : ''}${(p.intervenantsNoms || []).length ? ' · avec ' + p.intervenantsNoms.join(', ') : ''}${annulee && p.motif ? ' · Motif : ' + p.motif : ''}${p.lien && !annulee ? ' · Lien : ' + p.lien : ''}`, date: v.le || p.majLe || new Date().toISOString() });
       return;
     }
     const code = p.formation || '—', mf = (D.mgrFormations || []).find(f => (f.code || f.id) === code) || {};
@@ -326,7 +363,8 @@ const myFormations = D => S.role === 'formateur' ? D.formations.filter(f => lowe
 
 function presStats(D, email, fid) {
   const app = D.apprenants.find(a => a.id === email); const fset = new Set(app?.formations || []);
-  const sc = D.seances.filter(s => s.statut === 'Tenue' && fset.has(s.formationId) && (!fid || s.formationId === fid));
+  const hors = new Set(D.formations.filter(f => f.horsAcademie).map(f => f.id));
+  const sc = D.seances.filter(s => s.statut === 'Tenue' && fset.has(s.formationId) && (fid ? s.formationId === fid : !hors.has(s.formationId)));
   const map = {}; D.presences.filter(p => p.email === email).forEach(p => map[p.seanceId] = p.statut);
   const r = { total: sc.length, P: 0, R: 0, A: 0, J: 0, NR: 0 };
   sc.forEach(s => { const st = map[s.id]; if (st && r[st] !== undefined) r[st]++; else r.NR++; });
@@ -1016,13 +1054,13 @@ PAGES.parametres = D => {
   const st = D.settings;
   return `${roBanner()}<div class="card" style="max-width:720px"><div class="card-h"><h3>Paramètres de l'année académique</h3></div><div class="card-b">
   <div class="alert info">${IC.info}<div>Le T-shirt, la cotisation et les mois doivent être <b>identiques à ceux de CVPB Manager</b>, sinon le reste à payer affiché aux étudiants sera différent.</div></div>
-  <div class="grid g2">${[['Année académique', st.annee], ['Prix du T-shirt', money(st.teeshirt)], ['Cotisation mensuelle', money(st.mensualite)], ['Premier mois (M1)', fMois(st.moisDebut)], ['Dernier mois', fMois(st.moisFin)], ['Seuil d\'assiduité', st.seuilAssiduite + ' %'], ['Moyenne minimale', st.noteMin + '/20'], ['Valideur(s) des séances Académie', (st.valideurs || []).map(e => (D.users.find(u => u.id === e) || {}).nom || e).join(', ') || 'Président uniquement']].map(([l, v]) => `<div><div class="small muted">${l}</div><div class="strong" style="text-transform:capitalize">${esc(v)}</div></div>`).join('')}</div>
+  <div class="grid g2">${[['Année académique', st.annee], ['Prix du T-shirt', money(st.teeshirt)], ['Cotisation mensuelle', money(st.mensualite)], ['Premier mois (M1)', fMois(st.moisDebut)], ['Dernier mois', fMois(st.moisFin)], ['Seuil d\'assiduité', st.seuilAssiduite + ' %'], ['Moyenne minimale', st.noteMin + '/20'], ['Valideur(s) des séances Académie', (st.valideurs || []).map(e => (D.users.find(u => u.id === e) || {}).nom || e).join(', ') || 'Président uniquement'], ['Valideur(s) des séances de tutorat', (st.valideursTutorat || []).map(e => (D.users.find(u => u.id === e) || {}).nom || e).join(', ') || 'Président uniquement']].map(([l, v]) => `<div><div class="small muted">${l}</div><div class="strong" style="text-transform:capitalize">${esc(v)}</div></div>`).join('')}</div>
   ${can('parametres') ? `<button class="btn btn-p" style="margin-top:18px" data-act="paramForm">${IC.edit} Modifier</button>` : ''}</div></div>
   ${DEMO && can('parametres') ? `<div class="card" style="max-width:720px;margin-top:16px"><div class="card-h"><h3>Mode démonstration</h3></div><div class="card-b"><p class="small muted" style="margin-bottom:10px">Les données de démonstration sont stockées sur cet appareil uniquement.</p><button class="btn btn-d" data-act="demoReset">Réinitialiser les données de démo</button></div></div>` : ''}`;
 };
 ACT.paramForm = () => formModal({
   title: 'Paramètres', values: S.D.settings,
-  fields: [{ k: 'annee', label: 'Année académique', req: true, ph: '2026-2027' }, { k: 'teeshirt', label: 'Prix du T-shirt (FCFA)', type: 'number', req: true, half: true }, { k: 'mensualite', label: 'Cotisation mensuelle (FCFA)', type: 'number', req: true, half: true }, { k: 'moisDebut', label: 'Premier mois de cotisation (M1)', type: 'month', req: true, half: true }, { k: 'moisFin', label: 'Dernier mois de cotisation', type: 'month', req: true, half: true }, { k: 'seuilAssiduite', label: 'Seuil d\'assiduité (%)', type: 'number', min: 0, max: 100, req: true, half: true }, { k: 'noteMin', label: 'Moyenne minimale (/20)', type: 'number', min: 0, max: 20, req: true, half: true }, { k: 'valideurs', label: 'Qui valide les séances de l\'Académie programmées dans CVPB Manager ?', type: 'checks', options: S.D.users.filter(u => acaRole(u) && acaRole(u) !== 'president').map(u => [u.id, `${u.nom} (${ROLES[acaRole(u)]})`]), hint: 'Le Président peut toujours valider. Les activités de la communauté sont validées par le Président.' }],
+  fields: [{ k: 'annee', label: 'Année académique', req: true, ph: '2026-2027' }, { k: 'teeshirt', label: 'Prix du T-shirt (FCFA)', type: 'number', req: true, half: true }, { k: 'mensualite', label: 'Cotisation mensuelle (FCFA)', type: 'number', req: true, half: true }, { k: 'moisDebut', label: 'Premier mois de cotisation (M1)', type: 'month', req: true, half: true }, { k: 'moisFin', label: 'Dernier mois de cotisation', type: 'month', req: true, half: true }, { k: 'seuilAssiduite', label: 'Seuil d\'assiduité (%)', type: 'number', min: 0, max: 100, req: true, half: true }, { k: 'noteMin', label: 'Moyenne minimale (/20)', type: 'number', min: 0, max: 20, req: true, half: true }, { k: 'valideurs', label: 'Qui valide les séances de l\'Académie programmées dans CVPB Manager ?', type: 'checks', options: S.D.users.filter(u => acaRole(u) && acaRole(u) !== 'president').map(u => [u.id, `${u.nom} (${ROLES[acaRole(u)]})`]), hint: 'Le Président peut toujours valider. Les activités de la communauté sont validées par le Président.' }, { k: 'valideursTutorat', label: 'Qui valide les séances de tutorat programmées dans CVPB Manager ?', type: 'checks', options: S.D.users.filter(u => acaRole(u) && acaRole(u) !== 'president').map(u => [u.id, `${u.nom} (${ROLES[acaRole(u)]})`]) }],
   onSubmit: async v => { await DB.set('settings', 'general', v); toast('Paramètres enregistrés', 'ok'); rerender(); }
 });
 ACT.demoReset = () => confirmBox('Remettre les données de démonstration à zéro ?', async () => { DemoDB.reset(); localStorage.removeItem(readKey()); rerender(); });
@@ -1034,19 +1072,20 @@ ACT.demoReset = () => confirmBox('Remettre les données de démonstration à zé
 // ---------- VALIDATION DES SÉANCES (programme CVPB Manager) ----------
 PAGES.validations = D => {
   const t = TODAY(), tab = S.valTab || 'avalider';
-  const L = (D.mgrProgramme || []).filter(p => ['academie', 'communaute'].includes(p.type) && p.date && p.date >= t && p.statut !== 'Tenue')
+  const L = (D.mgrProgramme || []).filter(p => TYPES_PROG.includes(p.type) && p.date && p.date >= t && p.statut !== 'Tenue')
     .map(p => ({ p, v: validationDe(D, p.id) })).sort((a, b) => (a.p.date + (a.p.hDebut || '')).localeCompare(b.p.date + (b.p.hDebut || '')));
   const aValider = L.filter(x => !x.v || (x.v.statut === 'Validée' && (x.v.date !== x.p.date || (x.v.hDebut || '') !== (x.p.hDebut || ''))));
   const list = tab === 'avalider' ? aValider : L.filter(x => x.v);
   const fNom = code => ((D.mgrFormations || []).find(f => (f.code || f.id) === code) || {}).intitule || code || '';
   const vals = (D.settings.valideurs || []).map(e => (D.users.find(u => u.id === e) || {}).nom || e);
-  return `<div class="alert info">${IC.info}<div>Les séances programmées dans <b>CVPB Manager</b> n'apparaissent aux apprenants (calendrier + notification) <b>qu'une fois validées ici</b>.<br>Séances de l'Académie : ${vals.length ? '<b>' + vals.map(esc).join(', ') + '</b> et le Président' : 'le Président (désignez le valideur dans Paramètres)'} · Activités de la communauté : le Président.</div></div>
+  const valsT = (D.settings.valideursTutorat || []).map(e => (D.users.find(u => u.id === e) || {}).nom || e);
+  return `<div class="alert info">${IC.info}<div>Les séances programmées dans <b>CVPB Manager</b> n'apparaissent aux apprenants (calendrier + notification) <b>qu'une fois validées ici</b>.<br>Séances de l'Académie : ${vals.length ? '<b>' + vals.map(esc).join(', ') + '</b> et le Président' : 'le Président (désignez le valideur dans Paramètres)'} · Tutorat : ${valsT.length ? '<b>' + valsT.map(esc).join(', ') + '</b> et le Président' : 'le Président (désignez le valideur dans Paramètres)'} · Activités de la communauté : le Président.</div></div>
   <div class="toolbar"><div class="tabs" style="margin:0"><button class="${tab === 'avalider' ? 'on' : ''}" data-act="valTab" data-t="avalider">À valider (${aValider.length})</button><button class="${tab === 'traitees' ? 'on' : ''}" data-act="valTab" data-t="traitees">Traitées</button></div></div>
   <div class="card">${list.map(({ p, v }) => {
     const modif = v && v.statut === 'Validée' && (v.date !== p.date || (v.hDebut || '') !== (p.hDebut || ''));
     const ok = peutValider(p.type);
     return `<div class="list-i"><div class="date-box"><b>${toD(p.date).getDate()}</b><small>${toD(p.date).toLocaleDateString('fr-FR', { month: 'short' })}</small></div><div style="flex:1;min-width:0"><div class="t">${esc(p.titre || fNom(p.formation) || 'Séance')}</div>
-      <div class="small muted">${p.type === 'communaute' ? 'Communauté' : 'Académie · ' + esc(fNom(p.formation))} · ${esc([p.hDebut, p.hFin].filter(Boolean).join(' – '))}${p.lieu ? ' · ' + esc(p.lieu) : ''}</div>
+      <div class="small muted">${p.type === 'communaute' ? 'Communauté' : p.type === 'tutorat' ? 'Tutorat · ' + esc(specsProg(p).map(codeSpec).join(' + ') + ' ' + (p.niveau || '')) : 'Académie · ' + esc(fNom(p.formation))} · ${esc([p.hDebut, p.hFin].filter(Boolean).join(' – '))}${p.lieu ? ' · ' + esc(p.lieu) : ''}</div>
       <div style="margin-top:4px">${p.statut === 'Annulée' ? '<span class="b b-r">Annulée dans CVPB Manager</span> ' : ''}${!v ? '<span class="b b-o">À valider</span>' : modif ? '<span class="b b-o">Modifiée depuis la validation</span>' : v.statut === 'Validée' ? `<span class="b b-v">Validée par ${esc(v.parNom || '')}</span>` : `<span class="b b-r">Refusée : ${esc(v.motif || '')}</span>`}</div></div>
       ${ok ? `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${!v || modif || v.statut !== 'Validée' ? `<button class="btn btn-g btn-s" data-act="valOk" data-id="${esc(p.id)}">${IC.ok} Valider</button>` : ''}${!v || v.statut === 'Validée' ? `<button class="btn btn-o btn-s" data-act="valNon" data-id="${esc(p.id)}">Refuser</button>` : ''}</div>` : ''}</div>`;
   }).join('') || empty(tab === 'avalider' ? 'Aucune séance en attente de validation.' : 'Aucune séance traitée.', IC.ok)}</div>`;
@@ -1476,7 +1515,10 @@ function seedDemo() {
   ];
   mgr_programme.push({ id: 'PG3', type: 'communaute', titre: 'Journée de salubrité à Port-Bouët', date: fut[1] || fut[0], hDebut: '08:00', hFin: '12:00', mode: 'Présentiel', lieu: 'Mairie de Port-Bouët', statut: 'Programmée', historique: [{}] },
     { id: 'PG4', type: 'academie', formation: 'L1-01', titre: 'Word : mise en page avancée', date: fut[1] || fut[0], hDebut: '09:00', hFin: '11:00', mode: 'Présentiel', lieu: 'Salle CVPB', statut: 'Programmée', historique: [{}] });
-  const validations = [{ id: 'PG1', statut: 'Validée', type: 'academie', date: fut[0], hDebut: '09:00', par: 'demo.formation' + dom, parNom: 'Fatou BAMBA', le: iso(3) }, { id: 'PG3', statut: 'Validée', type: 'communaute', date: fut[1] || fut[0], hDebut: '08:00', par: 'demo.president' + dom, parNom: 'Président CVPB (démo)', le: iso(2) }];
+  mgr_programme.push({ id: 'PG5', type: 'tutorat', titre: 'Explication : algorithmique', specialites: ['IAN-RSI : Informatique et Sciences du Numérique – Réseaux et Sécurité Informatique', 'IAN-DAS : Informatique et Sciences du Numérique – Développement d\'Applications et e-Services'], specialite: 'IAN-RSI : Informatique et Sciences du Numérique – Réseaux et Sécurité Informatique', niveau: 'Licence 1', date: fut[0], hDebut: '15:00', hFin: '17:00', mode: 'En ligne', lieu: '', lien: 'https://meet.google.com/abc-defg-hij', intervenantsNoms: ['Yves GNAMIEN'], statut: 'Programmée', historique: [{}] });
+  const mgr_pt_tut = [{ id: 'PT1', programme: 'PT1', date: past[2] || past[1], titre: 'Tutorat RSI + DAS', specialites: [], niveau: 'Licence 1', presences: { [etudiants[1].id]: 'P', [etudiants[0].id]: 'A' } }];
+  const mgr_pt_com = [{ id: 'PC1', programme: 'PC1', type: 'communaute', date: past[0], titre: 'Journée d\'intégration', presences: Object.fromEntries(etudiants.slice(0, 6).map((e, i) => [e.id, i === 3 ? 'A' : 'P'])) }];
+  const validations = [{ id: 'PG5', statut: 'Validée', type: 'tutorat', date: fut[0], hDebut: '15:00', par: 'demo.president' + dom, parNom: 'Président CVPB (démo)', le: iso(1) }, { id: 'PG1', statut: 'Validée', type: 'academie', date: fut[0], hDebut: '09:00', par: 'demo.formation' + dom, parNom: 'Fatou BAMBA', le: iso(3) }, { id: 'PG3', statut: 'Validée', type: 'communaute', date: fut[1] || fut[0], hDebut: '08:00', par: 'demo.president' + dom, parNom: 'Président CVPB (démo)', le: iso(2) }];
   const infos = [
     { id: 'i1', titre: 'Inscriptions ouvertes : formation Développement web (L2)', categorie: 'Annonce', cible: 'Licence 2', contenu: 'Les étudiants de Licence 2 peuvent s\'inscrire à la formation Développement web (HTML, CSS, JavaScript). Démarrage samedi prochain.', date: iso(26), auteur: 'demo.com' + dom, auteurNom: 'Grâce N\'DA', epingle: false },
     { id: 'i2', titre: 'Rappel : port du T-shirt CVPB obligatoire samedi', categorie: 'Rappel', cible: 'Tous', contenu: 'Pour la photo de groupe de la CVPB Académie, merci de venir avec votre T-shirt CVPB samedi.', date: iso(6), auteur: 'demo.com' + dom, auteurNom: 'Grâce N\'DA', epingle: true },
@@ -1491,5 +1533,5 @@ function seedDemo() {
     { id: 'qz2', formationId: 'f3', titre: 'Devoir : affiche de la CVPB Académie', consignes: 'Réalisez une affiche sur Canva et déposez le lien de partage.', duree: '', limite: fut[1] || fut[0], coef: 2, publie: true, cloture: false, publieLe: iso(4), creeLe: iso(5), creePar: 'demo.formateur' + dom, questions: [{ type: 'lien', enonce: 'Lien de votre affiche (Canva, Drive…)', points: 20 }] }];
   const quiz_cles = [{ id: 'qz1', formationId: 'f2', cles: [0, 0, [0, 1, 3], [['figer'], ['MOYENNE', 'moyenne()']], 'Résumer et analyser de grandes données ; regrouper, filtrer, calculer des totaux.'], corrigePublie: false }, { id: 'qz2', formationId: 'f3', cles: [''], corrigePublie: false }];
   const reponses = apprenants.filter(a => a.formations.includes('f2')).slice(2, 6).map((a, i) => ({ id: repId('qz1', a.id), quizId: 'qz1', formationId: 'f2', email: a.id, reponses: [i % 3 ? 0 : 1, 0, i % 2 ? [0, 1, 3] : [0, 1], ['figer', i % 2 ? 'MOYENNE' : 'somme'], 'Il sert à résumer un grand tableau de données.'], soumisLe: iso(20 - i), ...(i < 2 ? { manuel: { 4: 2 + i } } : {}) }));
-  return { quiz, quiz_cles, reponses, infos, validations, mgr_formations, mgr_seances, mgr_programme, settings: [{ id: 'general', ...DEFAULT_SETTINGS }], users, formations, etudiants, apprenants, seances, presences, exercices, notes, encaissements, sanctions, activites, notifications, annonces: [{ id: 'an1', titre: 'Nouvelle activité : Atelier CV & LinkedIn', message: 'Inscrivez-vous auprès de votre délégué.', cible: 'Tous les apprenants', nb: 11, date: iso(20), par: 'demo.sg1' + dom }] };
+  return { mgr_pt_tut, mgr_pt_com, quiz, quiz_cles, reponses, infos, validations, mgr_formations, mgr_seances, mgr_programme, settings: [{ id: 'general', ...DEFAULT_SETTINGS }], users, formations, etudiants, apprenants, seances, presences, exercices, notes, encaissements, sanctions, activites, notifications, annonces: [{ id: 'an1', titre: 'Nouvelle activité : Atelier CV & LinkedIn', message: 'Inscrivez-vous auprès de votre délégué.', cible: 'Tous les apprenants', nb: 11, date: iso(20), par: 'demo.sg1' + dom }] };
 }
