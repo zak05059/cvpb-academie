@@ -76,6 +76,7 @@ const ROLES = {
   formateur: 'Formateur',
   encaissement: 'Responsable des encaissements',
   caisse: 'Responsable de la caisse',
+  communication: 'Commission Communication',
   etudiant: 'Apprenant'
 };
 const FIN_ROLES = ['president', 'vp', 'encaissement', 'caisse'];
@@ -83,24 +84,26 @@ const PEDAGO = ['president', 'resp_formation', 'resp_suivi'];
 
 // pages visibles par rôle
 const NAV = {
-  president: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'assiduite', 'sanctions', '|Finances', 'paiements', '|Communication', 'annonces', 'notifications', '|Administration', 'utilisateurs', 'parametres'],
-  vp: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'assiduite', 'sanctions', '|Finances', 'paiements', '|Communication', 'annonces', 'notifications', '|Administration', 'utilisateurs', 'parametres'],
-  sg: ['home', 'calendrier', '|Membres & activités', 'apprenants', 'formations', 'assiduite', 'sanctions', '|Communication', 'annonces', 'notifications'],
-  resp_formation: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'assiduite', 'sanctions', '|Communication', 'annonces', 'notifications'],
-  resp_suivi: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'assiduite', 'sanctions', '|Communication', 'annonces', 'notifications'],
-  formateur: ['home', 'calendrier', '|Mes formations', 'seances', 'exercices', 'assiduite', '|Communication', 'notifications'],
-  encaissement: ['home', 'calendrier', '|Finances', 'paiements', 'apprenants', '|Communication', 'notifications'],
-  caisse: ['home', 'calendrier', '|Finances', 'paiements', 'apprenants', '|Communication', 'notifications'],
-  etudiant: ['home', 'mesformations', 'mesnotes', 'mespaiements', 'discipline', 'calendrier', 'notifications']
+  president: ['home', 'calendrier', 'validations', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'assiduite', 'sanctions', '|Finances', 'paiements', '|Communication', 'informations', 'annonces', 'notifications', '|Administration', 'utilisateurs', 'parametres'],
+  vp: ['home', 'calendrier', 'validations', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'assiduite', 'sanctions', '|Finances', 'paiements', '|Communication', 'informations', 'annonces', 'notifications', '|Administration', 'utilisateurs', 'parametres'],
+  sg: ['home', 'calendrier', '|Membres & activités', 'apprenants', 'formations', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
+  resp_formation: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
+  resp_suivi: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
+  formateur: ['home', 'calendrier', '|Mes formations', 'seances', 'exercices', 'quiz', 'assiduite', '|Communication', 'informations', 'notifications'],
+  encaissement: ['home', 'calendrier', '|Finances', 'paiements', 'apprenants', '|Communication', 'informations', 'notifications'],
+  caisse: ['home', 'calendrier', '|Finances', 'paiements', 'apprenants', '|Communication', 'informations', 'notifications'],
+  communication: ['home', 'calendrier', '|Communication', 'informations', 'notifications'],
+  etudiant: ['home', 'mesformations', 'mesquiz', 'mesnotes', 'mespaiements', 'informations', 'discipline', 'calendrier', 'notifications']
 };
 // pages modifiables par rôle (le reste est en lecture seule)
 const EDIT = {
-  president: ['calendrier', 'formations', 'apprenants', 'seances', 'exercices', 'sanctions', 'paiements', 'annonces', 'parametres'],
+  president: ['calendrier', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'sanctions', 'paiements', 'annonces', 'parametres'],
   vp: [],
   sg: ['calendrier', 'apprenants', 'annonces'],
-  resp_formation: ['calendrier', 'formations', 'apprenants', 'seances', 'exercices', 'sanctions', 'annonces'],
-  resp_suivi: ['calendrier', 'formations', 'apprenants', 'seances', 'exercices', 'sanctions', 'annonces'],
-  formateur: ['seances', 'exercices'],
+  resp_formation: ['calendrier', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'sanctions', 'annonces'],
+  resp_suivi: ['calendrier', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'sanctions', 'annonces'],
+  formateur: ['seances', 'exercices', 'quiz'],
+  communication: [],
   encaissement: ['paiements'],
   caisse: [],
   etudiant: []
@@ -111,19 +114,29 @@ const PAGE_META = {
   assiduite: ['Assiduité', IC.chart], sanctions: ['Discipline & sanctions', IC.gavel], paiements: ['Situation financière', IC.money],
   annonces: ['Annonces', IC.mega], notifications: ['Notifications', IC.bell],
   utilisateurs: ['Utilisateurs & accès', IC.shield], parametres: ['Paramètres', IC.gear],
+  quiz: ['Quiz & évaluations', IC.check], mesquiz: ['Mes évaluations', IC.check], informations: ['Informations', IC.mega], validations: ['Validation des séances', IC.ok],
   mesformations: ['Mes formations', IC.book], mesnotes: ['Mes notes', IC.star], mespaiements: ['Mes paiements', IC.money], discipline: ['Discipline', IC.gavel]
 };
-const SHORT = { home: 'Accueil', mesformations: 'Formations', mespaiements: 'Paiements', mesnotes: 'Notes', notifications: 'Alertes', seances: 'Appel', exercices: 'Notes', paiements: 'Finances', sanctions: 'Discipline' };
-const can = page => (EDIT[S.role] || []).includes(page);
+const SHORT = { mesquiz: 'Quiz', quiz: 'Quiz', informations: 'Infos', validations: 'Valider', home: 'Accueil', mesformations: 'Formations', mespaiements: 'Paiements', mesnotes: 'Notes', notifications: 'Alertes', seances: 'Appel', exercices: 'Notes', paiements: 'Finances', sanctions: 'Discipline' };
+// Droits particuliers : Informations = commission COMMUNICATION de CVPB Manager + Président ;
+// Validation des séances = valideurs désignés dans Paramètres (séances Académie) + Président (tout).
+const peutInfo = () => S.role === 'president' || !!S.user?.comm;
+const peutValider = type => S.role === 'president' || (type !== 'communaute' && (S.D.settings?.valideurs || []).includes(S.user?.email));
+const can = page => page === 'informations' ? peutInfo() : page === 'validations' ? peutValider('academie') : (EDIT[S.role] || []).includes(page);
 const seesFinance = () => FIN_ROLES.includes(S.role);
 const isStudent = () => S.role === 'etudiant';
 
+const NIVEAUX = ['Licence 1', 'Licence 2', 'Licence 3'];
+const NIVEAUX_FORMATION = ['Tous niveaux', 'Licence 1', 'Licence 2', 'Licence 3', 'Licence 2 et 3'];
+// Un étudiant de tel niveau peut-il suivre une formation de tel niveau ?
+const niveauOk = (fNiv, eNiv) => !fNiv || /Tous/.test(fNiv) || (fNiv.includes('2 et 3') ? ['Licence 2', 'Licence 3'].includes(eNiv) : fNiv === eNiv);
+const nivCourt = n => String(n || '').replace('Licence ', 'L').replace(' et ', '-');
 const DOMAINES = ['Intelligence artificielle & outils numériques', 'Bureautique & productivité', 'Programmation & développement web', 'Design graphique & communication visuelle', 'UI/UX Design & Figma', 'Audiovisuel & montage vidéo', 'Réseaux informatiques & cybersécurité', 'Développement personnel & compétences pro'];
 const PRES_LABEL = { P: 'Présent', R: 'Retard', A: 'Absent', J: 'Absence justifiée' };
 const PRES_BADGE = { P: 'b-v', R: 'b-o', A: 'b-r', J: 'b-b' };
 const SANCTIONS = ['Avertissement', 'Blâme', 'Suspension temporaire', 'Exclusion de la formation'];
 const MODES = ['Espèces', 'Orange Money', 'MTN MoMo', 'Moov Money', 'Wave'];
-const NOTIF_CAT = { activite: ['Activité', IC.cal, 'v1'], paiement: ['Paiement', IC.money, 'v2'], sanction: ['Discipline', IC.gavel, 'v4'], note: ['Note', IC.star, 'v5'], assiduite: ['Assiduité', IC.check, 'v3'], annonce: ['Annonce', IC.mega, 'v1'] };
+const NOTIF_CAT = { info: ['Information', IC.mega, 'v1'], quiz: ['Évaluation', IC.check, 'v5'], activite: ['Activité', IC.cal, 'v1'], paiement: ['Paiement', IC.money, 'v2'], sanction: ['Discipline', IC.gavel, 'v4'], note: ['Note', IC.star, 'v5'], assiduite: ['Assiduité', IC.check, 'v3'], annonce: ['Annonce', IC.mega, 'v1'] };
 const DEFAULT_SETTINGS = { annee: '2026-2027', teeshirt: 5000, mensualite: 5000, moisDebut: '2026-11', moisFin: '2027-06', seuilAssiduite: 75, noteMin: 10 };
 
 // ------------------------------------------------------------
@@ -133,25 +146,31 @@ const DEFAULT_SETTINGS = { annee: '2026-2027', teeshirt: 5000, mensualite: 5000,
 // Correspondance rôle CVPB Manager -> rôle dans l'Académie. Les autres rôles (tuteur, délégué…) n'ont pas accès.
 const ROLE_MAP = { president: 'president', vicepresident: 'vp', secretaire: 'sg', formation: 'resp_formation', accompagnement: 'resp_suivi', pedagogie: 'formateur', encaissement: 'encaissement', caisse: 'caisse', tresorerie: 'caisse' };
 const ROLE_PRIO = ['president', 'resp_formation', 'resp_suivi', 'sg', 'vp', 'encaissement', 'caisse', 'formateur'];
+const estComm = u => !!u && u.actif !== false && [...(u.commissions || []), ...(u.commissionsResp || [])].includes('COMMUNICATION');
 function acaRole(u) {
   if (!u || u.actif === false) return null;
   const rs = [u.role, ...(u.rolesSup || [])].map(r => ROLE_MAP[r]).filter(Boolean);
-  return ROLE_PRIO.find(r => rs.includes(r)) || null;
+  return ROLE_PRIO.find(r => rs.includes(r)) || (estComm(u) ? 'communication' : null);
 }
 // Dans Firebase, les collections de l'Académie sont préfixées « aca_ » pour ne jamais toucher
 // celles de CVPB Manager. « etudiants » et « encaissements » sont LUES dans CVPB Manager (lecture seule).
 const EXTERNES = ['etudiants', 'encaissements', 'users'];
-const PHYS = c => EXTERNES.includes(c) ? c : 'aca_' + c;
+// Collections de CVPB Manager lues par l'Académie sous un autre nom (lecture seule)
+const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme' };
+const QUIZ_ROLES = ['president', 'vp', 'resp_formation', 'resp_suivi', 'formateur'];
+const PHYS = c => PHYS_MAP[c] || (EXTERNES.includes(c) ? c : 'aca_' + c);
+const CODES_PRES = ['P', 'R', 'J', 'A'];
 const COLS = ['settings', 'users', 'formations', 'apprenants', 'seances', 'presences', 'exercices', 'notes', 'paiements', 'caisse', 'sanctions', 'activites', 'notifications', 'annonces'];
 
 const DemoDB = {
-  KEY: 'cvpba_demo_v2',
+  KEY: 'cvpba_demo_v6',
   data: null,
   load() { try { this.data = JSON.parse(localStorage.getItem(this.KEY)); } catch { this.data = null; } if (!this.data) { this.data = seedDemo(); this.save(); } },
   save() { try { localStorage.setItem(this.KEY, JSON.stringify(this.data)); } catch { } },
   reset() { localStorage.removeItem(this.KEY); this.load(); },
   async list(col, f = {}) { const arr = this.data[col] || []; return arr.filter(x => Object.entries(f).every(([k, v]) => x[k] === v)).map(x => ({ ...x })); },
   async get(col, id) { const x = (this.data[col] || []).find(x => x.id === id); return x ? { ...x } : null; },
+  async listIn(col, path, values) { return (this.data[col] || []).filter(x => values.includes(path.reduce((o, k) => o?.[k], x))).map(x => ({ ...x })); },
   async set(col, id, obj) { const arr = this.data[col] = this.data[col] || []; const i = arr.findIndex(x => x.id === id); const v = { ...(i >= 0 ? arr[i] : {}), ...obj, id }; if (i >= 0) arr[i] = v; else arr.push(v); this.save(); return id; },
   async add(col, obj) { const id = uid(); await this.set(col, id, obj); return id; },
   async update(col, id, patch) { return this.set(col, id, patch); },
@@ -165,6 +184,8 @@ const FireDB = {
     const snap = await getDocs(query(collection(S.fb.db, PHYS(col)), ...cs));
     return snap.docs.map(d => ({ ...d.data(), id: d.id }));
   },
+  // Requête « champ imbriqué parmi des valeurs » : ex. presences.<matricule> parmi P/R/J/A (seules les séances où l'étudiant est pointé)
+  async listIn(col, path, values) { const { collection, query, where, getDocs, FieldPath } = S.fb.fs; const snap = await getDocs(query(collection(S.fb.db, PHYS(col)), where(new FieldPath(...path), 'in', values))); return snap.docs.map(d => ({ ...d.data(), id: d.id })); },
   async get(col, id) { const { doc, getDoc } = S.fb.fs; const s = await getDoc(doc(S.fb.db, PHYS(col), id)); return s.exists() ? { ...s.data(), id: s.id } : null; },
   async set(col, id, obj) { const { doc, setDoc } = S.fb.fs; const o = { ...obj }; delete o.id; await setDoc(doc(S.fb.db, PHYS(col), id), o, { merge: true }); return id; },
   async add(col, obj) { const { collection, addDoc } = S.fb.fs; const o = { ...obj }; delete o.id; const r = await addDoc(collection(S.fb.db, PHYS(col)), o); return r.id; },
@@ -189,7 +210,7 @@ async function loadData(force = false) {
   const safe = async (p) => { try { return await p; } catch (e) { console.warn(e); return []; } };
   const st = await safe(DB.get('settings', 'general'));
   D.settings = { ...DEFAULT_SETTINGS, ...(st && !Array.isArray(st) ? st : {}) };
-  const pub = ['formations', 'seances', 'exercices', 'activites'];
+  const pub = ['formations', 'seances', 'exercices', 'activites', 'infos', 'validations'];
   await Promise.all(pub.map(async c => D[c] = await safe(DB.list(c))));
   if (r === 'etudiant') {
     const lk = await DB.get('apprenants', me).catch(() => null);
@@ -198,6 +219,14 @@ async function loadData(force = false) {
     D.apprenants = lk ? [mergeApp(lk, et)] : [];
     for (const c of ['presences', 'notes', 'sanctions']) D[c] = await safe(DB.list(c, { email: me }));
     D.encaissements = lk ? (await safe(DB.list('encaissements', { matricule: lk.matricule }))).filter(VALIDE) : [];
+    // Pointages faits dans CVPB Manager : uniquement les séances où CET étudiant est pointé
+    D.mgrSeances = lk ? await safe(DB.listIn('mgr_seances', ['presences', lk.matricule], CODES_PRES)) : [];
+    D.mgrFormations = await safe(DB.list('mgr_formations'));
+    D.mgrProgramme = lk ? await safe(DB.listIn('mgr_programme', ['type'], ['academie', 'communaute'])) : [];
+    // Évaluations en ligne : quiz publiés, corrigés publiés, et SES réponses
+    D.quiz = await safe(DB.list('quiz', { publie: true }));
+    D.cles = await safe(DB.list('quiz_cles', { corrigePublie: true }));
+    D.reponses = await safe(DB.list('reponses', { email: me }));
     D.users = []; D.annonces = [];
   } else {
     for (const c of ['users', 'presences', 'notes', 'sanctions', 'annonces']) D[c] = await safe(DB.list(c));
@@ -205,15 +234,84 @@ async function loadData(force = false) {
     const aca = await safe(DB.list('apprenants'));
     D.apprenants = aca.map(x => mergeApp(x, D.etudiants.find(e => e.id === x.matricule)));
     D.encaissements = seesFinance() ? (await safe(DB.list('encaissements'))).filter(VALIDE) : [];
+    const lisentPointages = ['president', 'vp', 'sg', 'resp_formation', 'resp_suivi', 'formateur'].includes(r);
+    D.mgrSeances = lisentPointages ? await safe(DB.list('mgr_seances')) : [];
+    D.mgrFormations = await safe(DB.list('mgr_formations'));
+    D.mgrProgramme = await safe(DB.listIn('mgr_programme', ['type'], ['academie', 'communaute']));
+    const lisentQuiz = QUIZ_ROLES.includes(r);
+    D.quiz = lisentQuiz ? await safe(DB.list('quiz')) : [];
+    D.cles = lisentQuiz ? await safe(DB.list('quiz_cles')) : [];
+    D.reponses = lisentQuiz ? await safe(DB.list('reponses')) : [];
   }
   const n1 = await safe(DB.list('notifications', { dest: me }));
   const n2 = await safe(DB.list('notifications', { dest: 'all' }));
   // Les paiements sont saisis dans CVPB Manager : chaque encaissement devient une notification pour l'étudiant
+  fusionPointages(D);
+  const n5 = fusionProgramme(D, r === 'etudiant' ? me : null);
+  const n6 = fusionQuiz(D, r === 'etudiant' ? me : null);
+  const n7 = (D.infos || []).filter(i => r !== 'etudiant' || infoPourMoi(D, i)).map(i => ({ id: 'inf_' + i.id, local: true, dest: me, cat: 'info', titre: (i.epingle ? '📌 ' : '') + i.titre, message: String(i.contenu || '').slice(0, 160), date: i.date || '' }));
+  const n4 = r === 'etudiant' ? D.presences.filter(p => p.source === 'mgr' && (p.statut === 'A' || p.statut === 'R')).map(p => ({ id: 'pt_' + p.seanceId, local: true, dest: me, cat: 'assiduite', titre: p.statut === 'A' ? 'Absence enregistrée' : 'Retard enregistré', message: `${fName(D, p.formationId)} — séance du ${fDate(p.date)} (pointage CVPB Manager).`, date: p.date + 'T18:00:00' })) : [];
   const n3 = r === 'etudiant' ? D.encaissements.map(e => ({ id: 'enc_' + e.id, local: true, dest: me, cat: 'paiement', titre: 'Paiement enregistré ✅', message: `${money(e.montant)} — ${e.nature || 'Paiement'}${e.mois ? ' (' + e.mois + ')' : ''} · ${e.mode || ''}${e.num ? ' · ' + e.num : ''}.`, date: (e.date || TODAY()) + 'T12:00:00' })) : [];
-  D.notifications = [...n1, ...n2, ...n3].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  D.notifications = [...n1, ...n2, ...n3, ...n4, ...n5, ...n6, ...n7].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   D.__ok = true;
   S.D = D;
   return D;
+}
+// Intègre les séances pointées dans CVPB Manager à l'assiduité de l'Académie.
+// Une formation Académie liée à un code CVPB Manager (champ codeCVPB) reçoit ces séances ;
+// sinon la formation CVPB Manager apparaît telle quelle (lecture seule).
+function fusionPointages(D) {
+  const byMat = {}; D.apprenants.forEach(a => byMat[a.matricule] = a);
+  const lien = {}; D.formations.forEach(f => { if (f.codeCVPB) lien[f.codeCVPB] = f.id; });
+  (D.mgrSeances || []).filter(s => s.validation?.statut !== 'Retournée' && s.date).forEach(s => {
+    const code = s.formation || '—'; let fid = lien[code];
+    if (!fid) {
+      fid = 'mgr_' + code;
+      if (!D.formations.some(f => f.id === fid)) { const mf = (D.mgrFormations || []).find(f => (f.code || f.id) === code) || {}; D.formations.push({ id: fid, titre: mf.intitule || code, domaine: 'CVPB Manager', niveau: mf.niveau || 'Tous niveaux', formateurs: mf.formateurs || [], formateurNom: '', statut: 'En cours', source: 'mgr', codeCVPB: code }); }
+    }
+    const sid = 'mgr_' + s.id;
+    D.seances.push({ id: sid, formationId: fid, date: s.date, theme: 'Séance pointée dans CVPB Manager', statut: 'Tenue', source: 'mgr', aValider: s.validation?.statut !== 'Validée' });
+    Object.entries(s.presences || {}).forEach(([mat, c]) => {
+      const a = byMat[mat]; if (!a || !CODES_PRES.includes(c)) return;
+      D.presences.push({ id: sid + '_' + mat, seanceId: sid, formationId: fid, email: a.id, statut: c, date: s.date, source: 'mgr' });
+      if (!(a.formations || []).includes(fid)) a.formations = [...(a.formations || []), fid];
+    });
+  });
+}
+// Séances PROGRAMMÉES dans CVPB Manager (collection programme) :
+// - type « academie » : validées par le(s) valideur(s) désigné(s) dans Paramètres (ou le Président) ;
+// - type « communaute » : validées par le Président.
+// Tant qu'une séance n'est pas validée, les apprenants ne la voient pas et ne sont pas notifiés.
+// Apprenants concernés (Académie) : inscrits à la formation liée au code ; sinon tous ceux du niveau de la formation.
+const validationDe = (D, id) => (D.validations || []).find(v => v.id === id);
+function fusionProgramme(D, moi) {
+  const notifs = [], t = TODAY();
+  const lien = {}; D.formations.forEach(f => { if (f.codeCVPB && f.source !== 'mgr') lien[f.codeCVPB] = f.id; });
+  (D.mgrProgramme || []).filter(p => ['academie', 'communaute'].includes(p.type) && p.date && p.statut !== 'Tenue').forEach(p => {
+    const v = validationDe(D, p.id);
+    if (!v || v.statut !== 'Validée') return;
+    const annulee = p.statut === 'Annulée', heure = [p.hDebut, p.hFin].filter(Boolean).join(' – ');
+    const modif = v.date && (v.date !== p.date || (v.hDebut || '') !== (p.hDebut || ''));
+    const titreNotif = annulee ? 'Séance annulée' : modif ? 'Séance modifiée ou reportée' : p.type === 'communaute' ? 'Nouvelle activité de la communauté' : 'Nouvelle séance programmée';
+    if (p.type === 'communaute') {
+      D.activites.push({ id: 'prog_' + p.id, titre: (annulee ? '[Annulée] ' : '') + (p.titre || 'Activité de la communauté'), type: 'Communauté', date: p.date, heure, lieu: [p.mode, p.lieu].filter(Boolean).join(' · '), description: p.description || '', source: 'mgr' });
+      if (moi && p.date >= t) notifs.push({ id: `pg_${p.id}_${p.date}_${p.hDebut || ''}_${p.statut || ''}`, local: true, dest: moi, cat: 'activite', titre: titreNotif, message: `${p.titre || 'Activité'} · ${fDate(p.date)}${heure ? ', ' + heure : ''}${p.lieu ? ' · ' + p.lieu : ''}${annulee && p.motif ? ' · Motif : ' + p.motif : ''}`, date: v.le || p.majLe || new Date().toISOString() });
+      return;
+    }
+    const code = p.formation || '—', mf = (D.mgrFormations || []).find(f => (f.code || f.id) === code) || {};
+    let fid = lien[code];
+    if (!fid) { fid = 'mgr_' + code; if (!D.formations.some(f => f.id === fid)) D.formations.push({ id: fid, titre: mf.intitule || code, domaine: 'CVPB Manager', niveau: mf.niveau || 'Tous niveaux', formateurs: mf.formateurs || [], formateurNom: '', statut: 'En cours', source: 'mgr', codeCVPB: code }); }
+    const concernes = lien[code] ? enrolled(D, fid) : actifsAca(D).filter(a => niveauOk(mf.niveau, a.niveau));
+    if (!concernes.length) return;
+    D.seances.push({ id: 'prog_' + p.id, formationId: fid, date: p.date, heure, theme: p.titre || p.module || 'Séance programmée', lieu: [p.mode, p.lieu].filter(Boolean).join(' · '), lien: p.lien || '', statut: annulee ? 'Annulée' : 'Programmée', source: 'mgr' });
+    concernes.forEach(a => { if (!(a.formations || []).includes(fid)) a.formations = [...(a.formations || []), fid]; });
+    if (moi && concernes.some(a => a.id === moi) && p.date >= t) {
+      notifs.push({ id: `pg_${p.id}_${p.date}_${p.hDebut || ''}_${p.statut || ''}`, local: true, dest: moi, cat: 'activite', titre: titreNotif,
+        message: `${mf.intitule || code}${p.titre ? ' — « ' + p.titre + ' »' : ''} · ${fDate(p.date)}${heure ? ', ' + heure : ''}${p.lieu ? ' · ' + p.lieu : ''}${annulee && p.motif ? ' · Motif : ' + p.motif : ''}${p.lien && !annulee ? ' · Lien : ' + p.lien : ''}`,
+        date: v.le || p.majLe || new Date().toISOString() });
+    }
+  });
+  return notifs;
 }
 const refresh = async () => { S.D = {}; await loadData(true); updateBell(); };
 
@@ -224,7 +322,7 @@ const fName = (D, id) => (D.formations.find(f => f.id === id) || {}).titre || '�
 const aName = (D, email) => { const a = D.apprenants.find(a => a.id === email); return a ? `${a.nom} ${a.prenoms}` : email; };
 const actifsAca = D => D.apprenants.filter(a => a.surListe && a.statut === 'Actif');
 const enrolled = (D, fid) => D.apprenants.filter(a => a.surListe && (a.formations || []).includes(fid) && a.statut !== 'Abandon').sort((a, b) => (a.nom + a.prenoms).localeCompare(b.nom + b.prenoms));
-const myFormations = D => S.role === 'formateur' ? D.formations.filter(f => lower(f.formateurEmail) === S.user.email) : D.formations;
+const myFormations = D => S.role === 'formateur' ? D.formations.filter(f => lower(f.formateurEmail) === S.user.email || (f.formateurs || []).includes(S.user.email)) : D.formations;
 
 function presStats(D, email, fid) {
   const app = D.apprenants.find(a => a.id === email); const fset = new Set(app?.formations || []);
@@ -465,7 +563,7 @@ function homeStudent(D) {
   ${statPair(['Total versé', money(fin.total)], ['Reste à payer', money(fin.reste)])}
   <div class="sec-h"><h3>Mes formations</h3><a href="#/mesformations">Voir tout</a></div>
   ${fs.length ? `<div class="promos">${fs.map(f => promoFormation(D, f, me)).join('')}</div>` : `<div class="card">${empty('Vous n\'êtes inscrit à aucune formation.', IC.book)}</div>`}
-  ${tiles('Mon espace', ['mesformations', 'mesnotes', 'mespaiements', 'discipline', 'calendrier', 'notifications'])}
+  ${tiles('Mon espace', ['mesformations', 'mesquiz', 'mesnotes', 'mespaiements', 'informations', 'discipline', 'calendrier', 'notifications'])}
   <div class="home-grid">
     ${barChart('Mes notes', 'Derniers exercices', ex.map((x, i) => 'Ex ' + (i + 1)), [{ name: 'Note sur 20', values: ex.map(x => Math.round(+x.n.note / (+x.e.bareme || 20) * 20 * 10) / 10) }]) || `<div class="card"><div class="card-h"><h3>Mes notes</h3></div>${empty('Aucune note pour le moment.', IC.star)}</div>`}
     <div class="card"><div class="card-h"><h3>Prochaines séances</h3></div>${upcoming(D, a.formations || []).slice(0, 5).map(evItem).join('') || empty('Rien de programmé pour le moment.', IC.cal)}</div>
@@ -561,18 +659,18 @@ PAGES.formations = D => {
   <div class="grid g3">${D.formations.map(f => {
     const ins = enrolled(D, f.id), tenues = D.seances.filter(s => s.formationId === f.id && s.statut === 'Tenue').length;
     const txs = ins.map(a => presStats(D, a.id, f.id).taux).filter(x => x != null), tx = txs.length ? Math.round(sum(txs, x => x) / txs.length) : null;
-    return `<div class="card" style="display:flex;flex-direction:column"><div class="card-b" style="flex:1"><div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px"><span class="b ${f.statut === 'En cours' ? 'b-v' : f.statut === 'Terminée' ? 'b-g' : 'b-o'}">${esc(f.statut || '—')}</span><span class="b b-p" style="white-space:normal">${esc(f.domaine || '')}</span></div>
+    return `<div class="card" style="display:flex;flex-direction:column"><div class="card-b" style="flex:1"><div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px"><span class="b ${f.statut === 'En cours' ? 'b-v' : f.statut === 'Terminée' ? 'b-g' : 'b-o'}">${esc(f.statut || '—')}</span><span class="b b-b">${esc(f.niveau || 'Tous niveaux')}</span><span class="b b-p" style="white-space:normal">${esc(f.domaine || '')}</span></div>
     <h3 style="font-size:15px;margin-bottom:4px">${esc(f.titre)}</h3><div class="small muted">${IC.user.replace('<svg', '<svg width="13" height="13"')} ${esc(f.formateurNom || 'Formateur non affecté')}</div><div class="small muted">${esc(f.jour || '')} ${esc(f.heure || '')}${f.lieu ? ' · ' + esc(f.lieu) : ''}</div>
     <div style="display:flex;gap:14px;margin-top:12px"><div><b>${ins.length}</b><div class="small muted">inscrits</div></div><div><b>${tenues}</b><div class="small muted">séances tenues</div></div><div><b>${tx == null ? '—' : tx + ' %'}</b><div class="small muted">assiduité</div></div></div></div>
-    <div style="display:flex;gap:6px;padding:12px 18px;border-top:1px solid var(--line)"><button class="btn btn-o btn-s" data-act="formationVoir" data-id="${f.id}">${IC.eye} Inscrits</button><span style="flex:1"></span>${can('formations') ? `<button class="btn btn-o btn-s" data-act="formationForm" data-id="${f.id}">${IC.edit}</button><button class="btn btn-d btn-s" data-act="formationDel" data-id="${f.id}">${IC.trash}</button>` : ''}</div></div>`;
+    <div style="display:flex;gap:6px;padding:12px 18px;border-top:1px solid var(--line)"><button class="btn btn-o btn-s" data-act="formationVoir" data-id="${f.id}">${IC.eye} Inscrits</button><span style="flex:1"></span>${f.source === 'mgr' ? '<span class="b b-b">Pointée dans CVPB Manager</span>' : can('formations') ? `<button class="btn btn-o btn-s" data-act="formationForm" data-id="${f.id}">${IC.edit}</button><button class="btn btn-d btn-s" data-act="formationDel" data-id="${f.id}">${IC.trash}</button>` : ''}</div></div>`;
   }).join('') || `<div class="card">${empty('Aucune formation. Créez la première formation du catalogue.', IC.book)}</div>`}</div>`;
 };
 ACT.formationForm = d => {
-  const D = S.D, f = d.id ? D.formations.find(x => x.id === d.id) : { statut: 'À venir', jour: 'Samedi' };
+  const D = S.D, f = d.id ? { niveau: 'Tous niveaux', ...D.formations.find(x => x.id === d.id) } : { statut: 'À venir', jour: 'Samedi', niveau: 'Tous niveaux' };
   const formateurs = D.users.filter(u => ['formateur', 'president', 'resp_formation', 'resp_suivi'].includes(acaRole(u))).map(u => [u.id, `${u.nom} (${ROLES[acaRole(u)]})`]);
   formModal({
     title: d.id ? 'Modifier la formation' : 'Nouvelle formation', values: f,
-    fields: [{ k: 'titre', label: 'Intitulé de la formation', req: true }, { k: 'domaine', label: 'Domaine', type: 'select', options: DOMAINES, req: true }, { k: 'formateurEmail', label: 'Formateur', type: 'select', options: formateurs, hint: 'Les formateurs sont ajoutés dans « Utilisateurs & accès ».' }, { k: 'jour', label: 'Jour', type: 'select', options: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'], half: true }, { k: 'heure', label: 'Horaire', ph: '09h00 – 11h00', half: true }, { k: 'lieu', label: 'Lieu / lien Meet' }, { k: 'debut', label: 'Date de début', type: 'date', half: true }, { k: 'fin', label: 'Date de fin', type: 'date', half: true }, { k: 'statut', label: 'Statut', type: 'select', options: ['À venir', 'En cours', 'Terminée'], req: true }, { k: 'objectifs', label: 'Objectifs pédagogiques', type: 'textarea' }],
+    fields: [{ k: 'titre', label: 'Intitulé de la formation', req: true }, { k: 'domaine', label: 'Domaine', type: 'select', options: DOMAINES, req: true }, { k: 'niveau', label: 'Niveau concerné', type: 'select', options: NIVEAUX_FORMATION, empty: false, hint: 'Seuls les étudiants de ce niveau pourront y être inscrits.' }, { k: 'formateurEmail', label: 'Formateur', type: 'select', options: formateurs, hint: 'Les formateurs sont ajoutés dans « Utilisateurs & accès ».' }, { k: 'codeCVPB', label: 'Formation correspondante dans CVPB Manager', type: 'select', options: (D.mgrFormations || []).map(m => [m.code || m.id, `${m.code || m.id} · ${m.intitule || ''}`]), hint: 'Les présences pointées dans CVPB Manager pour ce code s\'ajouteront automatiquement à cette formation.' }, { k: 'jour', label: 'Jour', type: 'select', options: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'], half: true }, { k: 'heure', label: 'Horaire', ph: '09h00 – 11h00', half: true }, { k: 'lieu', label: 'Lieu / lien Meet' }, { k: 'debut', label: 'Date de début', type: 'date', half: true }, { k: 'fin', label: 'Date de fin', type: 'date', half: true }, { k: 'statut', label: 'Statut', type: 'select', options: ['À venir', 'En cours', 'Terminée'], req: true }, { k: 'objectifs', label: 'Objectifs pédagogiques', type: 'textarea' }],
     onSubmit: async v => {
       const u = D.users.find(u => u.id === v.formateurEmail); v.formateurNom = u ? u.nom : '';
       if (d.id) await DB.update('formations', d.id, v); else { await DB.add('formations', v); }
@@ -589,34 +687,41 @@ ACT.formationVoir = d => {
 
 // ---------- APPRENANTS ----------
 PAGES.apprenants = D => {
-  const q = lower(S.qApp || ''), fl = S.fApp || '', st = D.settings, fin = seesFinance();
-  const list = D.apprenants.filter(a => (!fl || (a.formations || []).includes(fl)) && (!q || lower(`${a.nom} ${a.prenoms} ${a.matricule} ${a.id} ${a.specialite}`).includes(q))).sort((a, b) => (a.nom + a.prenoms).localeCompare(b.nom + b.prenoms));
+  const q = lower(S.qApp || ''), fl = S.fApp || '', nv = S.nApp || '', st = D.settings, fin = seesFinance();
+  const list = D.apprenants.filter(a => (!fl || (a.formations || []).includes(fl)) && (!nv || a.niveau === nv) && (!q || lower(`${a.nom} ${a.prenoms} ${a.matricule} ${a.id} ${a.specialite}`).includes(q))).sort((a, b) => (a.nom + a.prenoms).localeCompare(b.nom + b.prenoms));
   const horsListe = D.apprenants.filter(a => !a.surListe).length, dispo = D.etudiants.filter(e => e.statut === 'Actif' && !D.apprenants.some(a => a.matricule === e.id)).length;
-  return `${roBanner()}<div class="alert info">${IC.info}<div>La liste des étudiants vient de <b>CVPB Manager</b> (${D.etudiants.filter(e => e.statut === 'Actif').length} étudiant(s) actif(s)). Seul un étudiant de cette liste peut être inscrit à l'Académie et se connecter. ${dispo} étudiant(s) actif(s) ne sont pas encore inscrits à l'Académie.</div></div>
+  return `${roBanner()}<div class="alert info">${IC.info}<div>La liste des étudiants vient de <b>CVPB Manager</b> (${D.etudiants.filter(e => e.statut === 'Actif').length} étudiant(s) actif(s)). Seul un étudiant de cette liste peut être inscrit à l'Académie et se connecter. ${dispo} étudiant(s) actif(s) ne sont pas encore inscrits à l'Académie.<br>Inscrits par niveau : ${NIVEAUX.map(n => `<b>${nivCourt(n)}</b> ${D.apprenants.filter(a => a.niveau === n).length}`).join(' · ')}</div></div>
   ${horsListe ? `<div class="alert bad">${IC.lock}<div><b>${horsListe} apprenant(s) n'ont plus accès</b> : ils ne figurent plus comme « Actif » dans la liste de CVPB Manager. Leur dossier Académie est conservé mais la connexion leur est refusée.</div></div>` : ''}
-  <div class="toolbar"><input class="inp search" placeholder="Rechercher (nom, matricule, e-mail)…" value="${esc(S.qApp || '')}" id="qApp"><select class="inp" style="max-width:240px" id="fApp"><option value="">Toutes les formations</option>${D.formations.map(f => `<option value="${f.id}" ${fl === f.id ? 'selected' : ''}>${esc(f.titre)}</option>`).join('')}</select><span class="sp"></span><button class="btn btn-o" data-act="appExport">${IC.down} Exporter</button>${can('apprenants') ? `<button class="btn btn-p" data-act="appForm">${IC.plus} Inscrire un étudiant</button>` : ''}</div>
+  <div class="toolbar"><input class="inp search" placeholder="Rechercher (nom, matricule, e-mail)…" value="${esc(S.qApp || '')}" id="qApp"><select class="inp" style="max-width:150px" id="nApp"><option value="">Tous niveaux</option>${NIVEAUX.map(n => `<option ${nv === n ? 'selected' : ''}>${n}</option>`).join('')}</select><select class="inp" style="max-width:240px" id="fApp"><option value="">Toutes les formations</option>${D.formations.map(f => `<option value="${f.id}" ${fl === f.id ? 'selected' : ''}>${esc(f.titre)}</option>`).join('')}</select><span class="sp"></span><button class="btn btn-o" data-act="appExport">${IC.down} Exporter</button>${can('apprenants') ? `<button class="btn btn-o" data-act="appLot">${IC.users} Inscrire une promotion</button><button class="btn btn-p" data-act="appForm">${IC.plus} Inscrire un étudiant</button>` : ''}</div>
   <div class="card tbl-wrap"><table><thead><tr><th>Apprenant</th><th class="hide-m">Spécialité</th><th class="hide-m">Formations</th><th>Assiduité</th><th>Moyenne</th>${fin ? '<th>Reste à payer</th>' : ''}<th>Accès</th><th></th></tr></thead><tbody>
   ${list.map(a => { const p = presStats(D, a.id), m = moyenne(D, a.id); return `<tr><td><div class="strong">${esc(a.nom)} ${esc(a.prenoms)}</div><div class="small muted">${esc(a.matricule)} · ${esc(a.id)}</div></td><td class="hide-m small">${esc(a.specialite)}<div class="muted">${esc(a.niveau)}</div></td><td class="hide-m">${(a.formations || []).map(fid => `<span class="b b-p" style="margin:1px">${esc((D.formations.find(f => f.id === fid) || {}).titre?.split(' ')[0] || '?')}</span>`).join('')}</td><td>${tauxBadge(p.taux, st.seuilAssiduite)}</td><td>${moyBadge(m)}</td>${fin ? `<td>${(r => r ? `<span class="b b-o">${money(r)}</span>` : '<span class="b b-v">À jour</span>')(finance(D, a.id).reste)}</td>` : ''}<td>${!a.surListe ? `<span class="b b-r" title="Statut CVPB Manager : ${esc(a.statutCVPB)}">Hors liste CVPB</span>` : `<span class="b ${a.statut === 'Actif' ? 'b-v' : a.statut === 'Suspendu' ? 'b-o' : 'b-g'}">${esc(a.statut)}</span>`}</td><td class="right" style="white-space:nowrap"><button class="icon-btn" data-act="fiche" data-id="${esc(a.id)}" title="Fiche">${IC.eye}</button>${can('apprenants') ? `<button class="icon-btn" data-act="appForm" data-id="${esc(a.id)}" title="Modifier">${IC.edit}</button>` : ''}</td></tr>`; }).join('') || `<tr><td colspan="8">${empty('Aucun apprenant inscrit à l\'Académie.', IC.users)}</td></tr>`}
   </tbody></table></div>`;
 };
 document.addEventListener('input', e => { if (e.target.id === 'qApp') { S.qApp = e.target.value; clearTimeout(S._t); S._t = setTimeout(() => { render().then(() => { const i = $('#qApp'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); }, 350); } });
-document.addEventListener('change', e => { if (e.target.id === 'fApp') { S.fApp = e.target.value; render(); } if (e.target.id === 'fSel') { S.fSel = e.target.value; render(); } });
+document.addEventListener('change', e => { if (e.target.id === 'fApp') { S.fApp = e.target.value; render(); } if (e.target.id === 'nApp') { S.nApp = e.target.value; render(); } if (e.target.id === 'fSel') { S.fSel = e.target.value; render(); } });
 ACT.appExport = () => { const D = S.D, fin = seesFinance(); exportCSV('apprenants_cvpb_academie', ['Matricule CVPB', 'Nom', 'E-mail UVCI', 'Spécialité', 'Niveau', 'Formations', 'Assiduité %', 'Moyenne', ...(fin ? ['Reste à payer'] : []), 'Statut Académie', 'Statut CVPB Manager'], D.apprenants.map(a => [a.matricule, `${a.nom} ${a.prenoms}`, a.id, a.specialite, a.niveau, (a.formations || []).map(f => fName(D, f)).join(' | '), presStats(D, a.id).taux ?? '', moyenne(D, a.id) ?? '', ...(fin ? [finance(D, a.id).reste] : []), a.statut, a.statutCVPB])); };
 ACT.appForm = d => {
   const D = S.D, a = d.id ? D.apprenants.find(x => x.id === d.id) : { statut: 'Actif', formations: [] };
   const libres = D.etudiants.filter(e => e.statut === 'Actif' && !D.apprenants.some(x => x.matricule === e.id)).sort((x, y) => (x.nom || '').localeCompare(y.nom || ''));
   const fields = [
-    ...(d.id ? [] : [{ k: 'matricule', label: 'Étudiant (liste CVPB Manager)', type: 'select', req: true, options: libres.map(e => [e.id, `${e.nom} — ${e.id}${e.academie ? ' · Académie ✓' : ''}`]), hint: libres.length ? 'Seuls les étudiants « Actif » de CVPB Manager apparaissent ici.' : 'Aucun étudiant disponible : ajoutez-le d\'abord dans CVPB Manager (Responsable des encaissements).' },
+    ...(d.id ? [] : [{ k: 'niv', label: 'Niveau', type: 'select', options: NIVEAUX, empty: false, onChange: (v, m) => {
+        const sel = m.querySelector('#f_matricule'), cur = sel.value;
+        sel.innerHTML = '<option value="">— Choisir —</option>' + libres.filter(e => e.niveau === v.niv).map(e => `<option value="${esc(e.id)}" ${e.id === cur ? 'selected' : ''}>${esc(e.nom)} — ${esc(e.id)}${e.academie ? ' · Académie ✓' : ''}</option>`).join('');
+        m.querySelectorAll('#f_formations input').forEach(i => { const f = D.formations.find(x => x.id === i.value); const ok = niveauOk(f?.niveau, v.niv); i.disabled = !ok; if (!ok) i.checked = false; i.parentElement.style.opacity = ok ? 1 : .4; });
+      } },
+      { k: 'matricule', label: 'Étudiant (liste CVPB Manager)', type: 'select', req: true, options: libres.map(e => [e.id, `${e.nom} — ${e.id}${e.academie ? ' · Académie ✓' : ''}`]), hint: libres.length ? 'Seuls les étudiants « Actif » de CVPB Manager apparaissent ici.' : 'Aucun étudiant disponible : ajoutez-le d\'abord dans CVPB Manager (Responsable des encaissements).' },
       { k: 'email', label: `Son e-mail UVCI (@${CONFIG.allowedDomain})`, type: 'email', req: true, hint: "C'est cet e-mail qui lui permettra de se connecter." }]),
-    { k: 'formations', label: 'Formations suivies', type: 'checks', options: D.formations.filter(f => f.statut !== 'Terminée' || (a.formations || []).includes(f.id)).map(f => [f.id, f.titre]) },
+    { k: 'formations', label: 'Formations suivies', type: 'checks', options: D.formations.filter(f => f.source !== 'mgr' && ((f.statut !== 'Terminée' && (!d.id || niveauOk(f.niveau, a.niveau))) || (a.formations || []).includes(f.id))).map(f => [f.id, `${f.titre} (${nivCourt(f.niveau || 'Tous niveaux')})`]) },
     { k: 'statut', label: 'Statut à l\'Académie', type: 'select', options: ['Actif', 'Suspendu', 'Abandon'], req: true }];
   formModal({
-    title: d.id ? 'Modifier l\'inscription' : 'Inscrire un étudiant à l\'Académie', values: a, fields,
+    title: d.id ? 'Modifier l\'inscription' : 'Inscrire un étudiant à l\'Académie', values: { niv: S.nApp || 'Licence 1', ...a }, fields,
     intro: d.id ? `<div class="alert ${a.surListe ? 'info' : 'bad'}">${IC.info}<div><b>${esc(a.nom)} ${esc(a.prenoms)}</b> · ${esc(a.matricule)} · ${esc(a.id)}<br>Statut dans CVPB Manager : <b>${esc(a.statutCVPB)}</b>${a.surListe ? '' : ' — accès refusé tant qu\'il n\'est pas « Actif » dans CVPB Manager.'}</div></div>` : '',
     onSubmit: async v => {
       if (!d.id) {
         const email = lower(v.email), e = D.etudiants.find(x => x.id === v.matricule);
         if (!e || e.statut !== 'Actif') { toast('Cet étudiant n\'est pas « Actif » dans CVPB Manager.', 'bad'); return false; }
+        const horsNiv = (v.formations || []).filter(fid => !niveauOk((D.formations.find(f => f.id === fid) || {}).niveau, e.niveau));
+        if (horsNiv.length) { toast(`Formation non ouverte au niveau ${e.niveau} : ${fName(D, horsNiv[0])}`, 'bad'); return false; }
         if (!email.endsWith('@' + CONFIG.allowedDomain)) { toast(`L'e-mail doit se terminer par @${CONFIG.allowedDomain}`, 'bad'); return false; }
         if (D.apprenants.some(x => x.id === email)) { toast('Cet e-mail est déjà rattaché à un apprenant.', 'bad'); return false; }
         if (D.apprenants.some(x => x.matricule === v.matricule)) { toast('Cet étudiant est déjà inscrit à l\'Académie.', 'bad'); return false; }
@@ -626,7 +731,7 @@ ACT.appForm = d => {
         toast(`${e.nom} inscrit(e) à l'Académie`, 'ok');
       } else {
         const added = (v.formations || []).filter(f => !(a.formations || []).includes(f));
-        await DB.update('apprenants', d.id, { formations: v.formations, statut: v.statut });
+        await DB.update('apprenants', d.id, { formations: (v.formations || []).filter(f => !f.startsWith('mgr_')), statut: v.statut });
         for (const f of added) await notify(d.id, 'activite', 'Inscription à une formation', `Vous êtes inscrit(e) à « ${fName(D, f)} ».`);
         if (v.statut !== a.statut) await notify(d.id, 'annonce', 'Statut de votre dossier', `Votre statut à l'Académie est désormais : ${v.statut}.`);
         toast('Inscription mise à jour', 'ok');
@@ -634,6 +739,38 @@ ACT.appForm = d => {
       rerender();
     }
   });
+};
+ACT.appLot = () => {
+  const D = S.D;
+  let niv = S.nApp || 'Licence 2';
+  const body = () => {
+    const libres = D.etudiants.filter(e => e.statut === 'Actif' && e.niveau === niv && !D.apprenants.some(x => x.matricule === e.id)).sort((x, y) => (x.nom || '').localeCompare(y.nom || ''));
+    const fs = D.formations.filter(f => f.source !== 'mgr' && f.statut !== 'Terminée' && niveauOk(f.niveau, niv));
+    return `<div class="fld"><label>Niveau</label><div class="tabs" style="margin:0">${NIVEAUX.map(n => `<button type="button" class="${n === niv ? 'on' : ''}" data-niv="${n}">${n}</button>`).join('')}</div></div>
+    <div class="fld"><label>Formations à attribuer à tous</label><div class="chk" id="lotF">${fs.map(f => `<label><input type="checkbox" value="${f.id}"> ${esc(f.titre)}</label>`).join('') || `<span class="small muted">Aucune formation ouverte au niveau ${niv}. Créez-la d'abord (Formations → niveau « ${niv} » ou « Tous niveaux »).</span>`}</div></div>
+    <div class="alert info">${IC.info}<div>${libres.length} étudiant(s) « Actif » de <b>${niv}</b> dans CVPB Manager ne sont pas encore inscrits. Saisissez l'e-mail UVCI de ceux à inscrire ; les lignes vides sont ignorées.</div></div>
+    ${libres.map(e => `<div class="appel-row" style="flex-wrap:wrap"><div style="flex:1;min-width:160px"><div class="strong">${esc(e.nom)}</div><div class="small muted">${esc(e.id)} · ${esc(e.specialite || '')}</div></div><input class="inp" style="flex:1;min-width:200px" type="email" data-lot="${esc(e.id)}" placeholder="prenom.nom@${CONFIG.allowedDomain}"></div>`).join('') || empty(`Aucun étudiant de ${niv} disponible. Ajoutez-les d'abord dans CVPB Manager (Responsable des encaissements), avec le niveau « ${niv} ».`, IC.users)}`;
+  };
+  const m = openModal({
+    title: 'Inscrire une promotion', wide: true, ok: 'Inscrire', body: body(), onOk: async (m) => {
+      const fsel = [...m.querySelectorAll('#lotF input:checked')].map(i => i.value);
+      const rows = [...m.querySelectorAll('[data-lot]')].map(i => ({ mat: i.dataset.lot, email: lower(i.value) })).filter(r => r.email);
+      if (!rows.length) { toast('Saisissez au moins un e-mail.', 'bad'); return false; }
+      const vus = new Set();
+      for (const r of rows) {
+        if (!r.email.endsWith('@' + CONFIG.allowedDomain)) { toast(`E-mail invalide : ${r.email}`, 'bad'); return false; }
+        if (vus.has(r.email) || D.apprenants.some(x => x.id === r.email) || acaRole(D.users.find(x => x.id === r.email))) { toast(`E-mail déjà utilisé : ${r.email}`, 'bad'); return false; }
+        vus.add(r.email);
+      }
+      for (const r of rows) {
+        await DB.set('apprenants', r.email, { matricule: r.mat, formations: fsel, statut: 'Actif', dateInscription: TODAY(), inscritPar: S.user.email });
+        await notify(r.email, 'annonce', 'Bienvenue à la CVPB Académie 🎓', `Votre espace est ouvert. Matricule : ${r.mat}.`);
+      }
+      toast(`${rows.length} étudiant(s) de ${niv} inscrit(s)`, 'ok'); S.nApp = niv; rerender();
+    }
+  });
+  const wire = () => m.querySelectorAll('[data-niv]').forEach(b => b.onclick = () => { niv = b.dataset.niv; m.querySelector('.modal-b').innerHTML = body(); wire(); });
+  wire();
 };
 ACT.fiche = d => {
   const D = S.D, a = D.apprenants.find(x => x.id === d.id); if (!a) return;
@@ -660,7 +797,7 @@ PAGES.seances = D => {
   return `${roBanner()}${late ? `<div class="alert warn">${IC.alert}<div><b>${late} séance(s) passée(s) sans appel.</b> Faites l'appel pour que l'assiduité des apprenants soit à jour.</div></div>` : ''}
   <div class="toolbar">${formationFilter(D)}<span class="sp"></span>${can('seances') ? `<button class="btn btn-p" data-act="seanceForm">${IC.plus} Programmer une séance</button>` : ''}</div>
   <div class="card tbl-wrap"><table><thead><tr><th>Date</th><th>Formation</th><th>Thème</th><th>Statut</th><th>Présences</th><th></th></tr></thead><tbody>
-  ${list.map(s => { const pr = D.presences.filter(p => p.seanceId === s.id), np = pr.filter(p => p.statut === 'P' || p.statut === 'R').length; return `<tr><td><div class="strong">${fShort(s.date)}</div><div class="small muted">${esc(s.heure || '')}</div></td><td>${esc(fName(D, s.formationId))}</td><td>${esc(s.theme || '—')}</td><td><span class="b ${s.statut === 'Tenue' ? 'b-v' : s.statut === 'Annulée' ? 'b-r' : s.date <= t ? 'b-o' : 'b-p'}">${s.statut === 'Programmée' && s.date <= t ? 'Appel à faire' : esc(s.statut)}</span></td><td>${pr.length ? `${np}/${pr.length}` : '—'}</td><td class="right" style="white-space:nowrap">${can('seances') && s.statut !== 'Annulée' ? `<button class="btn ${s.statut === 'Tenue' ? 'btn-o' : 'btn-g'} btn-s" data-act="appel" data-id="${s.id}">${IC.check} ${s.statut === 'Tenue' ? 'Modifier l\'appel' : 'Faire l\'appel'}</button>` : `<button class="btn btn-o btn-s" data-act="appelVoir" data-id="${s.id}">${IC.eye}</button>`}${can('seances') ? ` <button class="icon-btn" data-act="seanceForm" data-id="${s.id}">${IC.edit}</button>` : ''}</td></tr>`; }).join('') || `<tr><td colspan="6">${empty('Aucune séance programmée.', IC.cal)}</td></tr>`}
+  ${list.map(s => { const pr = D.presences.filter(p => p.seanceId === s.id), np = pr.filter(p => p.statut === 'P' || p.statut === 'R').length; return `<tr><td><div class="strong">${fShort(s.date)}</div><div class="small muted">${esc(s.heure || '')}</div></td><td>${esc(fName(D, s.formationId))}</td><td>${esc(s.theme || '—')}</td><td><span class="b ${s.statut === 'Tenue' ? 'b-v' : s.statut === 'Annulée' ? 'b-r' : s.date <= t ? 'b-o' : 'b-p'}">${s.statut === 'Programmée' && s.date <= t ? 'Appel à faire' : esc(s.statut)}</span></td><td>${pr.length ? `${np}/${pr.length}` : '—'}</td><td class="right" style="white-space:nowrap">${s.source === 'mgr' ? `<span class="b b-b">CVPB Manager${s.aValider ? ' · à valider' : ''}</span>${s.statut === 'Tenue' ? ` <button class="btn btn-o btn-s" data-act="appelVoir" data-id="${s.id}">${IC.eye}</button>` : ''}` : can('seances') && s.statut !== 'Annulée' ? `<button class="btn ${s.statut === 'Tenue' ? 'btn-o' : 'btn-g'} btn-s" data-act="appel" data-id="${s.id}">${IC.check} ${s.statut === 'Tenue' ? 'Modifier l\'appel' : 'Faire l\'appel'}</button>` : `<button class="btn btn-o btn-s" data-act="appelVoir" data-id="${s.id}">${IC.eye}</button>`}${can('seances') && s.source !== 'mgr' ? ` <button class="icon-btn" data-act="seanceForm" data-id="${s.id}">${IC.edit}</button>` : ''}</td></tr>`; }).join('') || `<tr><td colspan="6">${empty('Aucune séance programmée.', IC.cal)}</td></tr>`}
   </tbody></table></div>`;
 };
 ACT.seanceForm = d => {
@@ -705,7 +842,7 @@ PAGES.exercices = D => {
   const list = D.exercices.filter(e => fids.includes(e.formationId) && (!S.fSel || e.formationId === S.fSel)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return `${roBanner()}<div class="toolbar">${formationFilter(D)}<span class="sp"></span>${can('exercices') ? `<button class="btn btn-p" data-act="exoForm">${IC.plus} Nouvel exercice</button>` : ''}</div>
   <div class="card tbl-wrap"><table><thead><tr><th>Exercice</th><th>Formation</th><th>Date</th><th>Barème</th><th>Notés</th><th>Moy. classe</th><th></th></tr></thead><tbody>
-  ${list.map(e => { const ins = enrolled(D, e.formationId), ns = D.notes.filter(n => n.exerciceId === e.id && n.note !== '' && n.note != null), mc = ns.length ? sum(ns, n => n.note) / ns.length : null; return `<tr><td><div class="strong">${esc(e.titre)}</div><div class="small muted">${esc(e.type || '')} · coef. ${esc(e.coef || 1)}</div></td><td>${esc(fName(D, e.formationId))}</td><td>${fShort(e.date)}</td><td>/${esc(e.bareme)}</td><td><span class="b ${ns.length >= ins.length && ins.length ? 'b-v' : 'b-o'}">${ns.length}/${ins.length}</span></td><td>${mc == null ? '—' : mc.toFixed(2) + '/' + e.bareme}</td><td class="right" style="white-space:nowrap">${can('exercices') ? `<button class="btn btn-g btn-s" data-act="notesForm" data-id="${e.id}">${IC.star} Saisir les notes</button> <button class="icon-btn" data-act="exoForm" data-id="${e.id}">${IC.edit}</button><button class="icon-btn" style="color:var(--rouge)" data-act="exoDel" data-id="${e.id}">${IC.trash}</button>` : `<button class="btn btn-o btn-s" data-act="notesVoir" data-id="${e.id}">${IC.eye}</button>`}</td></tr>`; }).join('') || `<tr><td colspan="7">${empty('Aucun exercice.', IC.star)}</td></tr>`}
+  ${list.map(e => { const ins = enrolled(D, e.formationId), ns = D.notes.filter(n => n.exerciceId === e.id && n.note !== '' && n.note != null), mc = ns.length ? sum(ns, n => n.note) / ns.length : null; return `<tr><td><div class="strong">${esc(e.titre)}</div><div class="small muted">${esc(e.type || '')} · coef. ${esc(e.coef || 1)}</div></td><td>${esc(fName(D, e.formationId))}</td><td>${fShort(e.date)}</td><td>/${esc(e.bareme)}</td><td><span class="b ${ns.length >= ins.length && ins.length ? 'b-v' : 'b-o'}">${ns.length}/${ins.length}</span></td><td>${mc == null ? '—' : mc.toFixed(2) + '/' + e.bareme}</td><td class="right" style="white-space:nowrap">${e.source === 'quiz' ? `<a class="btn btn-o btn-s" href="#/quiz">${IC.check} Évaluation en ligne</a>` : can('exercices') ? `<button class="btn btn-g btn-s" data-act="notesForm" data-id="${e.id}">${IC.star} Saisir les notes</button> <button class="icon-btn" data-act="exoForm" data-id="${e.id}">${IC.edit}</button><button class="icon-btn" style="color:var(--rouge)" data-act="exoDel" data-id="${e.id}">${IC.trash}</button>` : `<button class="btn btn-o btn-s" data-act="notesVoir" data-id="${e.id}">${IC.eye}</button>`}</td></tr>`; }).join('') || `<tr><td colspan="7">${empty('Aucun exercice.', IC.star)}</td></tr>`}
   </tbody></table></div>`;
 };
 ACT.exoForm = d => {
@@ -840,9 +977,9 @@ PAGES.mesformations = D => {
   return fs.map(f => {
     const p = presStats(D, me, f.id), m = moyenne(D, me, f.id), ss = D.seances.filter(s => s.formationId === f.id).sort((x, y) => y.date.localeCompare(x.date));
     const map = {}; D.presences.forEach(x => map[x.seanceId] = x.statut);
-    return `<div class="card" style="margin-bottom:16px"><div class="card-h"><div style="flex:1"><h3>${esc(f.titre)}</h3><div class="small muted">${esc(f.formateurNom || '')} · ${esc(f.jour || '')} ${esc(f.heure || '')}${f.lieu ? ' · ' + esc(f.lieu) : ''}</div></div>${tauxBadge(p.taux, st.seuilAssiduite)}</div>
+    return `<div class="card" style="margin-bottom:16px"><div class="card-h"><div style="flex:1"><h3>${esc(f.titre)}</h3><div class="small muted">${f.source === 'mgr' ? 'Présences pointées dans CVPB Manager' : `${esc(f.formateurNom || '')} · ${esc(f.jour || '')} ${esc(f.heure || '')}${f.lieu ? ' · ' + esc(f.lieu) : ''}`}</div></div>${tauxBadge(p.taux, st.seuilAssiduite)}</div>
     <div class="card-b"><div class="grid g4" style="margin-bottom:14px">${kpi(IC.check, 'v2', p.P, 'Présences')}${kpi(IC.clock, 'v3', p.R, 'Retards')}${kpi(IC.x, 'v4', p.A, 'Absences')}${kpi(IC.star, 'v5', m == null ? '—' : m.toFixed(2), 'Moyenne /20')}</div>${prog(p.taux)}<div class="small muted" style="margin-top:6px">${p.P + p.R} séance(s) suivie(s) sur ${p.total} · ${p.J} absence(s) justifiée(s)</div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Thème</th><th>Ma présence</th></tr></thead><tbody>${ss.map(s => `<tr><td>${fShort(s.date)}</td><td>${esc(s.theme || '—')}</td><td>${s.statut === 'Tenue' ? (map[s.id] ? `<span class="b ${PRES_BADGE[map[s.id]]}">${PRES_LABEL[map[s.id]]}</span>` : '<span class="b b-g">Non inscrit</span>') : `<span class="b ${s.statut === 'Annulée' ? 'b-r' : 'b-p'}">${esc(s.statut)}</span>`}</td></tr>`).join('') || '<tr><td colspan="3" class="center muted">Aucune séance</td></tr>'}</tbody></table></div></div>`;
+    <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Thème</th><th>Ma présence</th></tr></thead><tbody>${ss.map(s => `<tr><td>${fShort(s.date)}</td><td>${esc(s.theme || '—')}${s.aValider ? ' <span class="b b-o">en attente de validation</span>' : ''}</td><td>${s.statut === 'Tenue' ? (map[s.id] ? `<span class="b ${PRES_BADGE[map[s.id]]}">${PRES_LABEL[map[s.id]]}</span>` : '<span class="b b-g">Non inscrit</span>') : `<span class="b ${s.statut === 'Annulée' ? 'b-r' : 'b-p'}">${esc(s.statut)}</span>`}</td></tr>`).join('') || '<tr><td colspan="3" class="center muted">Aucune séance</td></tr>'}</tbody></table></div></div>`;
   }).join('') || `<div class="card">${empty('Vous n\'êtes inscrit à aucune formation. Rapprochez-vous du Responsable Formation.', IC.book)}</div>`;
 };
 PAGES.mesnotes = D => {
@@ -879,16 +1016,308 @@ PAGES.parametres = D => {
   const st = D.settings;
   return `${roBanner()}<div class="card" style="max-width:720px"><div class="card-h"><h3>Paramètres de l'année académique</h3></div><div class="card-b">
   <div class="alert info">${IC.info}<div>Le T-shirt, la cotisation et les mois doivent être <b>identiques à ceux de CVPB Manager</b>, sinon le reste à payer affiché aux étudiants sera différent.</div></div>
-  <div class="grid g2">${[['Année académique', st.annee], ['Prix du T-shirt', money(st.teeshirt)], ['Cotisation mensuelle', money(st.mensualite)], ['Premier mois (M1)', fMois(st.moisDebut)], ['Dernier mois', fMois(st.moisFin)], ['Seuil d\'assiduité', st.seuilAssiduite + ' %'], ['Moyenne minimale', st.noteMin + '/20']].map(([l, v]) => `<div><div class="small muted">${l}</div><div class="strong" style="text-transform:capitalize">${esc(v)}</div></div>`).join('')}</div>
+  <div class="grid g2">${[['Année académique', st.annee], ['Prix du T-shirt', money(st.teeshirt)], ['Cotisation mensuelle', money(st.mensualite)], ['Premier mois (M1)', fMois(st.moisDebut)], ['Dernier mois', fMois(st.moisFin)], ['Seuil d\'assiduité', st.seuilAssiduite + ' %'], ['Moyenne minimale', st.noteMin + '/20'], ['Valideur(s) des séances Académie', (st.valideurs || []).map(e => (D.users.find(u => u.id === e) || {}).nom || e).join(', ') || 'Président uniquement']].map(([l, v]) => `<div><div class="small muted">${l}</div><div class="strong" style="text-transform:capitalize">${esc(v)}</div></div>`).join('')}</div>
   ${can('parametres') ? `<button class="btn btn-p" style="margin-top:18px" data-act="paramForm">${IC.edit} Modifier</button>` : ''}</div></div>
   ${DEMO && can('parametres') ? `<div class="card" style="max-width:720px;margin-top:16px"><div class="card-h"><h3>Mode démonstration</h3></div><div class="card-b"><p class="small muted" style="margin-bottom:10px">Les données de démonstration sont stockées sur cet appareil uniquement.</p><button class="btn btn-d" data-act="demoReset">Réinitialiser les données de démo</button></div></div>` : ''}`;
 };
 ACT.paramForm = () => formModal({
   title: 'Paramètres', values: S.D.settings,
-  fields: [{ k: 'annee', label: 'Année académique', req: true, ph: '2026-2027' }, { k: 'teeshirt', label: 'Prix du T-shirt (FCFA)', type: 'number', req: true, half: true }, { k: 'mensualite', label: 'Cotisation mensuelle (FCFA)', type: 'number', req: true, half: true }, { k: 'moisDebut', label: 'Premier mois de cotisation (M1)', type: 'month', req: true, half: true }, { k: 'moisFin', label: 'Dernier mois de cotisation', type: 'month', req: true, half: true }, { k: 'seuilAssiduite', label: 'Seuil d\'assiduité (%)', type: 'number', min: 0, max: 100, req: true, half: true }, { k: 'noteMin', label: 'Moyenne minimale (/20)', type: 'number', min: 0, max: 20, req: true, half: true }],
+  fields: [{ k: 'annee', label: 'Année académique', req: true, ph: '2026-2027' }, { k: 'teeshirt', label: 'Prix du T-shirt (FCFA)', type: 'number', req: true, half: true }, { k: 'mensualite', label: 'Cotisation mensuelle (FCFA)', type: 'number', req: true, half: true }, { k: 'moisDebut', label: 'Premier mois de cotisation (M1)', type: 'month', req: true, half: true }, { k: 'moisFin', label: 'Dernier mois de cotisation', type: 'month', req: true, half: true }, { k: 'seuilAssiduite', label: 'Seuil d\'assiduité (%)', type: 'number', min: 0, max: 100, req: true, half: true }, { k: 'noteMin', label: 'Moyenne minimale (/20)', type: 'number', min: 0, max: 20, req: true, half: true }, { k: 'valideurs', label: 'Qui valide les séances de l\'Académie programmées dans CVPB Manager ?', type: 'checks', options: S.D.users.filter(u => acaRole(u) && acaRole(u) !== 'president').map(u => [u.id, `${u.nom} (${ROLES[acaRole(u)]})`]), hint: 'Le Président peut toujours valider. Les activités de la communauté sont validées par le Président.' }],
   onSubmit: async v => { await DB.set('settings', 'general', v); toast('Paramètres enregistrés', 'ok'); rerender(); }
 });
 ACT.demoReset = () => confirmBox('Remettre les données de démonstration à zéro ?', async () => { DemoDB.reset(); localStorage.removeItem(readKey()); rerender(); });
+
+// ============================================================
+// 8 bis. VALIDATION DES SÉANCES · INFORMATIONS · QUIZ & ÉVALUATIONS
+// ============================================================
+
+// ---------- VALIDATION DES SÉANCES (programme CVPB Manager) ----------
+PAGES.validations = D => {
+  const t = TODAY(), tab = S.valTab || 'avalider';
+  const L = (D.mgrProgramme || []).filter(p => ['academie', 'communaute'].includes(p.type) && p.date && p.date >= t && p.statut !== 'Tenue')
+    .map(p => ({ p, v: validationDe(D, p.id) })).sort((a, b) => (a.p.date + (a.p.hDebut || '')).localeCompare(b.p.date + (b.p.hDebut || '')));
+  const aValider = L.filter(x => !x.v || (x.v.statut === 'Validée' && (x.v.date !== x.p.date || (x.v.hDebut || '') !== (x.p.hDebut || ''))));
+  const list = tab === 'avalider' ? aValider : L.filter(x => x.v);
+  const fNom = code => ((D.mgrFormations || []).find(f => (f.code || f.id) === code) || {}).intitule || code || '';
+  const vals = (D.settings.valideurs || []).map(e => (D.users.find(u => u.id === e) || {}).nom || e);
+  return `<div class="alert info">${IC.info}<div>Les séances programmées dans <b>CVPB Manager</b> n'apparaissent aux apprenants (calendrier + notification) <b>qu'une fois validées ici</b>.<br>Séances de l'Académie : ${vals.length ? '<b>' + vals.map(esc).join(', ') + '</b> et le Président' : 'le Président (désignez le valideur dans Paramètres)'} · Activités de la communauté : le Président.</div></div>
+  <div class="toolbar"><div class="tabs" style="margin:0"><button class="${tab === 'avalider' ? 'on' : ''}" data-act="valTab" data-t="avalider">À valider (${aValider.length})</button><button class="${tab === 'traitees' ? 'on' : ''}" data-act="valTab" data-t="traitees">Traitées</button></div></div>
+  <div class="card">${list.map(({ p, v }) => {
+    const modif = v && v.statut === 'Validée' && (v.date !== p.date || (v.hDebut || '') !== (p.hDebut || ''));
+    const ok = peutValider(p.type);
+    return `<div class="list-i"><div class="date-box"><b>${toD(p.date).getDate()}</b><small>${toD(p.date).toLocaleDateString('fr-FR', { month: 'short' })}</small></div><div style="flex:1;min-width:0"><div class="t">${esc(p.titre || fNom(p.formation) || 'Séance')}</div>
+      <div class="small muted">${p.type === 'communaute' ? 'Communauté' : 'Académie · ' + esc(fNom(p.formation))} · ${esc([p.hDebut, p.hFin].filter(Boolean).join(' – '))}${p.lieu ? ' · ' + esc(p.lieu) : ''}</div>
+      <div style="margin-top:4px">${p.statut === 'Annulée' ? '<span class="b b-r">Annulée dans CVPB Manager</span> ' : ''}${!v ? '<span class="b b-o">À valider</span>' : modif ? '<span class="b b-o">Modifiée depuis la validation</span>' : v.statut === 'Validée' ? `<span class="b b-v">Validée par ${esc(v.parNom || '')}</span>` : `<span class="b b-r">Refusée : ${esc(v.motif || '')}</span>`}</div></div>
+      ${ok ? `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${!v || modif || v.statut !== 'Validée' ? `<button class="btn btn-g btn-s" data-act="valOk" data-id="${esc(p.id)}">${IC.ok} Valider</button>` : ''}${!v || v.statut === 'Validée' ? `<button class="btn btn-o btn-s" data-act="valNon" data-id="${esc(p.id)}">Refuser</button>` : ''}</div>` : ''}</div>`;
+  }).join('') || empty(tab === 'avalider' ? 'Aucune séance en attente de validation.' : 'Aucune séance traitée.', IC.ok)}</div>`;
+};
+ACT.valTab = d => { S.valTab = d.t; render(); };
+ACT.valOk = async d => {
+  const p = S.D.mgrProgramme.find(x => x.id === d.id); if (!p) return;
+  try { await DB.set('validations', p.id, { statut: 'Validée', type: p.type, date: p.date, hDebut: p.hDebut || '', par: S.user.email, parNom: S.user.nom, le: new Date().toISOString(), motif: '' }); toast('Séance validée : les apprenants concernés sont notifiés', 'ok'); rerender(); }
+  catch (e) { toast(e.message, 'bad'); }
+};
+ACT.valNon = d => {
+  const p = S.D.mgrProgramme.find(x => x.id === d.id); if (!p) return;
+  formModal({ title: 'Refuser la séance', ok: 'Refuser', fields: [{ k: 'motif', label: 'Motif (communiqué au programmateur)', type: 'textarea', req: true }],
+    onSubmit: async v => { await DB.set('validations', p.id, { statut: 'Refusée', type: p.type, date: p.date, hDebut: p.hDebut || '', par: S.user.email, parNom: S.user.nom, le: new Date().toISOString(), motif: v.motif }); toast('Séance refusée'); rerender(); } });
+};
+
+// ---------- INFORMATIONS (commission Communication) ----------
+const INFO_CATS = ['Annonce', 'Événement', 'Opportunité (stage, emploi, bourse)', 'Rappel', 'Résultats', 'Vie de la communauté'];
+function infoPourMoi(D, i) {
+  if (!i.cible || i.cible === 'Tous') return true;
+  const a = D.apprenants[0]; return !!a && a.niveau === i.cible;
+}
+PAGES.informations = D => {
+  const cat = S.infCat || '', edit = peutInfo();
+  const L = (D.infos || []).filter(i => (edit || !isStudent() || infoPourMoi(D, i)) && (!cat || i.categorie === cat))
+    .sort((a, b) => (b.epingle ? 1 : 0) - (a.epingle ? 1 : 0) || (b.date || '').localeCompare(a.date || ''));
+  setTimeout(() => markRead(L.slice(0, 30).map(i => 'inf_' + i.id)), 1500);
+  return `${edit ? '' : ''}<div class="toolbar"><select class="inp" style="max-width:260px" id="infCat"><option value="">Toutes les catégories</option>${INFO_CATS.map(c => `<option ${c === cat ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select><span class="sp"></span>${edit ? `<button class="btn btn-p" data-act="infoForm">${IC.plus} Publier une information</button>` : ''}</div>
+  ${edit ? `<div class="alert info">${IC.info}<div>Espace géré par la <b>commission Communication</b> (membres et responsables désignés dans CVPB Manager) et la Présidence. Chaque publication est notifiée aux apprenants ciblés.</div></div>` : ''}
+  ${L.map(i => `<div class="card" style="margin-bottom:14px"><div class="card-b">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">${i.epingle ? '<span class="b b-r">📌 Épinglé</span>' : ''}<span class="b b-p">${esc(i.categorie || 'Annonce')}</span>${i.cible && i.cible !== 'Tous' ? `<span class="b b-b">${esc(i.cible)}</span>` : ''}<span class="small muted" style="margin-left:auto">${fDT(i.date)} · ${esc(i.auteurNom || '')}</span></div>
+    <h3 style="font-size:16px;margin-bottom:6px">${esc(i.titre)}</h3>
+    <div style="white-space:pre-line;color:var(--ink-2)">${esc(i.contenu)}</div>
+    ${i.lien ? `<a class="btn btn-o btn-s" style="margin-top:12px" href="${esc(i.lien)}" target="_blank" rel="noopener">${IC.send} Ouvrir le lien</a>` : ''}
+    ${edit ? `<div style="display:flex;gap:6px;margin-top:12px;justify-content:flex-end"><button class="btn btn-o btn-s" data-act="infoForm" data-id="${esc(i.id)}">${IC.edit} Modifier</button><button class="btn btn-d btn-s" data-act="infoDel" data-id="${esc(i.id)}">${IC.trash}</button></div>` : ''}
+  </div></div>`).join('') || `<div class="card">${empty('Aucune information publiée pour le moment.', IC.mega)}</div>`}`;
+};
+document.addEventListener('change', e => { if (e.target.id === 'infCat') { S.infCat = e.target.value; render(); } });
+ACT.infoForm = d => {
+  const i = d.id ? S.D.infos.find(x => x.id === d.id) : { categorie: 'Annonce', cible: 'Tous', epingle: 'non' };
+  formModal({
+    title: d.id ? 'Modifier l\'information' : 'Publier une information', ok: d.id ? 'Enregistrer' : 'Publier', values: { ...i, epingle: i.epingle === true || i.epingle === 'oui' ? 'oui' : 'non' },
+    fields: [{ k: 'titre', label: 'Titre', req: true }, { k: 'categorie', label: 'Catégorie', type: 'select', options: INFO_CATS, empty: false, half: true }, { k: 'cible', label: 'Public', type: 'select', options: ['Tous', ...NIVEAUX], empty: false, half: true }, { k: 'contenu', label: 'Message', type: 'textarea', rows: 6, req: true }, { k: 'lien', label: 'Lien (affiche, formulaire, Drive…) facultatif', type: 'url', ph: 'https://' }, { k: 'epingle', label: 'Épingler en haut', type: 'select', options: [['non', 'Non'], ['oui', 'Oui']], empty: false }],
+    onSubmit: async v => {
+      const data = { ...v, epingle: v.epingle === 'oui', majLe: new Date().toISOString() };
+      if (d.id) await DB.update('infos', d.id, data);
+      else await DB.add('infos', { ...data, date: new Date().toISOString(), auteur: S.user.email, auteurNom: S.user.nom });
+      toast(d.id ? 'Information modifiée' : 'Information publiée et notifiée', 'ok'); rerender();
+    }
+  });
+};
+ACT.infoDel = d => confirmBox('Supprimer cette information ?', async () => { await DB.remove('infos', d.id); toast('Information supprimée'); rerender(); }, 'Supprimer');
+
+// ---------- QUIZ & ÉVALUATIONS EN LIGNE ----------
+// Types : qcm (1 bonne réponse), multi (plusieurs), vf (vrai/faux), trou (texte à trous {{réponse|variante}}),
+//         courte (réponse rédigée, corrigée par le formateur), lien (devoir rendu par lien Drive, corrigé par le formateur).
+// Les bonnes réponses sont stockées À PART (quiz_cles) : les apprenants n'y ont accès qu'après publication du corrigé.
+const Q_TYPES = { qcm: 'QCM (une bonne réponse)', multi: 'Choix multiples (plusieurs bonnes réponses)', vf: 'Vrai / Faux', trou: 'Texte à trous', courte: 'Réponse rédigée (correction manuelle)', lien: 'Devoir à rendre par lien (correction manuelle)' };
+const normRep = x => String(x ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+const repId = (qid, email) => `${qid}_${String(email).replace(/[^a-z0-9]/gi, '_')}`;
+function corrigerQuiz(q, cle, rep) {
+  let pts = 0, max = 0, manuel = false; const det = [];
+  (q.questions || []).forEach((x, i) => {
+    const p = +x.points || 1, k = cle?.cles?.[i], r = rep?.reponses?.[i]; max += p; let g = 0;
+    if (x.type === 'qcm' || x.type === 'vf') g = r != null && r !== '' && String(r) === String(k) ? p : 0;
+    else if (x.type === 'multi') { const a = [...(r || [])].map(String).sort().join(','), b = [...(k || [])].map(String).sort().join(','); g = a && a === b ? p : 0; }
+    else if (x.type === 'trou') { const bl = k || []; const ok = bl.filter((alts, j) => alts.map(normRep).includes(normRep(r?.[j]))).length; g = bl.length ? p * ok / bl.length : 0; }
+    else { const m = rep?.manuel?.[i]; if (m == null || m === '') { manuel = true; g = null; } else g = Math.min(p, Math.max(0, +m)); }
+    det.push(g); if (g != null) pts += g;
+  });
+  return { pts: Math.round(pts * 100) / 100, max, note20: max ? Math.round(pts / max * 2000) / 100 : 0, manuel, det };
+}
+// Les quiz deviennent des « exercices » de la formation : leurs notes comptent dans les moyennes.
+function fusionQuiz(D, moi) {
+  const notifs = [];
+  (D.quiz || []).filter(q => q.publie).forEach(q => {
+    const eid = 'quiz_' + q.id, cle = (D.cles || []).find(c => c.id === q.id);
+    D.exercices.push({ id: eid, formationId: q.formationId, titre: q.titre, type: 'Évaluation en ligne', date: q.limite || (q.publieLe || '').slice(0, 10) || TODAY(), bareme: 20, coef: +q.coef || 1, source: 'quiz', quizId: q.id });
+    if (cle && (cle.corrigePublie || !isStudent())) (D.reponses || []).filter(r => r.quizId === q.id).forEach(r => {
+      const c = corrigerQuiz(q, cle, r); if (c.manuel) return;
+      D.notes.push({ id: 'qn_' + r.id, exerciceId: eid, formationId: q.formationId, email: r.email, note: c.note20, commentaire: 'Évaluation en ligne', source: 'quiz' });
+    });
+    if (moi) {
+      const a = D.apprenants[0];
+      if (!a || !(a.formations || []).includes(q.formationId)) return;
+      notifs.push({ id: 'qz_' + q.id, local: true, dest: moi, cat: 'quiz', titre: 'Nouvelle évaluation en ligne', message: `${fName(D, q.formationId)} — « ${q.titre} »${q.limite ? ' · à rendre avant le ' + fDate(q.limite) : ''}.`, date: q.publieLe || '' });
+      if (cle?.corrigePublie) notifs.push({ id: 'qr_' + q.id, local: true, dest: moi, cat: 'note', titre: 'Résultats disponibles', message: `« ${q.titre} » : correction et note publiées.`, date: cle.publieLe || '' });
+    }
+  });
+  return notifs;
+}
+
+// --- Espace formateur
+PAGES.quiz = D => {
+  const fids = myFormations(D).filter(f => f.source !== 'mgr').map(f => f.id);
+  const L = (D.quiz || []).filter(q => fids.includes(q.formationId) && (!S.fSel || q.formationId === S.fSel)).sort((a, b) => (b.creeLe || '').localeCompare(a.creeLe || ''));
+  return `${roBanner()}<div class="alert info">${IC.info}<div>Créez des <b>QCM</b>, <b>vrai/faux</b>, <b>textes à trous</b>, <b>questions rédigées</b> ou des <b>devoirs à rendre par lien</b>. La correction est automatique (sauf rédaction et devoirs). Les apprenants voient leur note quand vous publiez le corrigé ; elle compte alors dans leur moyenne.</div></div>
+  <div class="toolbar">${formationFilter(D)}<span class="sp"></span>${can('quiz') ? `<button class="btn btn-p" data-act="quizEdit">${IC.plus} Nouvelle évaluation</button>` : ''}</div>
+  <div class="grid g2">${L.map(q => {
+    const ins = enrolled(D, q.formationId), reps = (D.reponses || []).filter(r => r.quizId === q.id), cle = (D.cles || []).find(c => c.id === q.id);
+    const cs = reps.map(r => corrigerQuiz(q, cle, r)), aCorr = cs.filter(c => c.manuel).length, notes = cs.filter(c => !c.manuel).map(c => c.note20);
+    const moy = notes.length ? (sum(notes, x => x) / notes.length).toFixed(2) : '—';
+    return `<div class="card"><div class="card-b"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${q.publie ? (q.cloture ? '<span class="b b-g">Clôturée</span>' : '<span class="b b-v">Ouverte aux apprenants</span>') : '<span class="b b-o">Brouillon</span>'}${cle?.corrigePublie ? '<span class="b b-b">Corrigé publié</span>' : ''}${aCorr ? `<span class="b b-r">${aCorr} à corriger</span>` : ''}</div>
+      <h3 style="font-size:15px">${esc(q.titre)}</h3><div class="small muted">${esc(fName(D, q.formationId))} · ${(q.questions || []).length} question(s)${q.duree ? ' · ' + q.duree + ' min' : ''}${q.limite ? ' · avant le ' + fShort(q.limite) : ''} · coef. ${esc(q.coef || 1)}</div>
+      <div style="display:flex;gap:16px;margin-top:10px"><div><b>${reps.length}/${ins.length}</b><div class="small muted">réponses</div></div><div><b>${moy}</b><div class="small muted">moyenne /20</div></div></div></div>
+      ${can('quiz') ? `<div style="display:flex;gap:6px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line)">
+        <button class="btn btn-o btn-s" data-act="quizRes" data-id="${q.id}">${IC.chart} Résultats</button>
+        ${!reps.length ? `<button class="btn btn-o btn-s" data-act="quizEdit" data-id="${q.id}">${IC.edit} Modifier</button>` : ''}
+        ${!q.publie ? `<button class="btn btn-g btn-s" data-act="quizPub" data-id="${q.id}">${IC.send} Publier</button>` : !q.cloture ? `<button class="btn btn-o btn-s" data-act="quizClose" data-id="${q.id}">Clôturer</button>` : ''}
+        ${q.publie && !cle?.corrigePublie ? `<button class="btn btn-p btn-s" data-act="quizCorr" data-id="${q.id}">${IC.ok} Publier corrigé & notes</button>` : ''}
+        ${!reps.length ? `<button class="icon-btn" style="color:var(--rouge)" data-act="quizDel" data-id="${q.id}">${IC.trash}</button>` : ''}</div>` : `<div style="padding:12px 18px;border-top:1px solid var(--line)"><button class="btn btn-o btn-s" data-act="quizRes" data-id="${q.id}">${IC.chart} Résultats</button></div>`}
+    </div>`;
+  }).join('') || `<div class="card">${empty('Aucune évaluation en ligne pour le moment.', IC.check)}</div>`}</div>`;
+};
+
+// Éditeur de quiz (questions + bonnes réponses)
+ACT.quizEdit = d => {
+  const D = S.D, q = d.id ? D.quiz.find(x => x.id === d.id) : null, cle = q ? (D.cles || []).find(c => c.id === q.id) : null;
+  const forms = myFormations(D).filter(f => f.source !== 'mgr');
+  // Brouillon de travail : questions avec leurs bonnes réponses
+  const Q = q ? (q.questions || []).map((x, i) => {
+    const k = cle?.cles?.[i];
+    if (x.type === 'trou') { let n = 0; return { ...x, enonce: String(x.enonce).replace(/\[\[(\d+)\]\]/g, () => '{{' + ((k || [])[n++] || []).join('|') + '}}'), k: null }; }
+    return { ...x, k };
+  }) : [{ type: 'qcm', enonce: '', options: ['', '', '', ''], k: 0, points: 1 }];
+  const meta = q ? { formationId: q.formationId, titre: q.titre, consignes: q.consignes || '', duree: q.duree || '', limite: q.limite || '', coef: q.coef || 1 } : { formationId: S.fSel || forms[0]?.id || '', titre: '', consignes: '', duree: '', limite: '', coef: 1 };
+  const qHtml = (x, i) => {
+    const opts = x.type === 'qcm' || x.type === 'multi' ? `<div style="margin-top:8px">${(x.options || []).map((o, j) => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="${x.type === 'qcm' ? 'radio' : 'checkbox'}" name="k${i}" data-k="${i}" value="${j}" ${x.type === 'qcm' ? (String(x.k) === String(j) ? 'checked' : '') : ((x.k || []).map(String).includes(String(j)) ? 'checked' : '')} title="Bonne réponse"><input class="inp" data-opt="${i}" data-j="${j}" value="${esc(o)}" placeholder="Réponse ${String.fromCharCode(65 + j)}"><button type="button" class="icon-btn" data-optdel="${i}" data-j="${j}">${IC.x}</button></div>`).join('')}<button type="button" class="btn btn-o btn-s" data-optadd="${i}">${IC.plus} Ajouter une réponse</button><div class="small muted" style="margin-top:4px">Cochez ${x.type === 'qcm' ? 'la bonne réponse' : 'toutes les bonnes réponses'}.</div></div>`
+      : x.type === 'vf' ? `<div class="chk" style="margin-top:8px"><label><input type="radio" name="k${i}" data-k="${i}" value="0" ${String(x.k) === '0' ? 'checked' : ''}> Vrai est la bonne réponse</label><label><input type="radio" name="k${i}" data-k="${i}" value="1" ${String(x.k) === '1' ? 'checked' : ''}> Faux est la bonne réponse</label></div>`
+      : x.type === 'trou' ? `<div class="small muted" style="margin-top:6px">Écrivez la phrase et mettez chaque réponse attendue entre doubles accolades. Variantes acceptées séparées par « | ».<br>Ex. : <code>La balise {{h1|&lt;h1&gt;}} crée un titre ; {{CSS}} gère la mise en forme.</code></div>`
+      : x.type === 'courte' ? `<input class="inp" style="margin-top:8px" data-modele="${i}" value="${esc(x.k || '')}" placeholder="Éléments de réponse attendus (visible par vous seulement)">`
+      : `<div class="small muted" style="margin-top:6px">L'apprenant dépose un lien (Google Drive, GitHub, Canva…) vers son travail ; vous notez ensuite.</div>`;
+    return `<div class="card" style="margin-bottom:12px;border:1.5px solid var(--line)"><div class="card-b">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><b style="white-space:nowrap">Q${i + 1}</b><select class="inp" data-type="${i}">${Object.entries(Q_TYPES).map(([k, l]) => `<option value="${k}" ${x.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select><input class="inp" style="width:80px" type="number" min="0.5" step="0.5" data-pts="${i}" value="${esc(x.points || 1)}" title="Points"><button type="button" class="icon-btn" style="color:var(--rouge)" data-qdel="${i}" title="Supprimer la question">${IC.trash}</button></div>
+      <textarea class="inp" rows="2" data-enonce="${i}" placeholder="${x.type === 'trou' ? 'Phrase avec {{réponses}}' : 'Énoncé de la question'}">${esc(x.enonce || '')}</textarea>${opts}</div></div>`;
+  };
+  const body = () => `<div class="frow"><div class="fld"><label>Formation <span style="color:var(--rouge)">*</span></label><select class="inp" id="qz_f">${forms.map(f => `<option value="${f.id}" ${meta.formationId === f.id ? 'selected' : ''}>${esc(f.titre)}</option>`).join('')}</select></div><div class="fld"><label>Titre <span style="color:var(--rouge)">*</span></label><input class="inp" id="qz_t" value="${esc(meta.titre)}" placeholder="Ex. : Quiz n°1 — Bases d'Excel"></div></div>
+    <div class="fld"><label>Consignes</label><textarea class="inp" id="qz_c" rows="2">${esc(meta.consignes)}</textarea></div>
+    <div class="frow"><div class="fld"><label>Durée (minutes, vide = libre)</label><input class="inp" type="number" min="1" id="qz_d" value="${esc(meta.duree)}"></div><div class="fld"><label>À rendre avant le</label><input class="inp" type="date" id="qz_l" value="${esc(meta.limite)}"></div></div>
+    <div class="fld" style="max-width:200px"><label>Coefficient dans la moyenne</label><input class="inp" type="number" min="1" step="1" id="qz_k" value="${esc(meta.coef)}"></div>
+    <h4 style="margin:10px 0">Questions</h4><div id="qz_qs">${Q.map(qHtml).join('')}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(Q_TYPES).map(([k, l]) => `<button type="button" class="btn btn-o btn-s" data-qadd="${k}">${IC.plus} ${l.split(' (')[0]}</button>`).join('')}</div>`;
+  const m = openModal({ title: q ? 'Modifier l\'évaluation' : 'Nouvelle évaluation en ligne', wide: true, ok: 'Enregistrer (brouillon)', body: body(), onOk: async () => { sync(); return save(); } });
+  const sync = () => {
+    meta.formationId = m.querySelector('#qz_f')?.value || ''; meta.titre = m.querySelector('#qz_t').value.trim(); meta.consignes = m.querySelector('#qz_c').value.trim();
+    meta.duree = m.querySelector('#qz_d').value; meta.limite = m.querySelector('#qz_l').value; meta.coef = m.querySelector('#qz_k').value || 1;
+    Q.forEach((x, i) => {
+      x.enonce = m.querySelector(`[data-enonce="${i}"]`)?.value || ''; x.points = +(m.querySelector(`[data-pts="${i}"]`)?.value) || 1;
+      if (x.type === 'qcm' || x.type === 'multi') { x.options = [...m.querySelectorAll(`[data-opt="${i}"]`)].map(e => e.value); const ch = [...m.querySelectorAll(`[data-k="${i}"]:checked`)].map(e => +e.value); x.k = x.type === 'qcm' ? (ch[0] ?? null) : ch; }
+      else if (x.type === 'vf') { const ch = m.querySelector(`[data-k="${i}"]:checked`); x.k = ch ? +ch.value : null; }
+      else if (x.type === 'courte') x.k = m.querySelector(`[data-modele="${i}"]`)?.value || '';
+    });
+  };
+  const redraw = () => { m.querySelector('.modal-b').innerHTML = body(); wire(); };
+  const wire = () => {
+    const b = m.querySelector('.modal-b');
+    b.querySelectorAll('[data-qadd]').forEach(e => e.onclick = () => { sync(); const t = e.dataset.qadd; Q.push({ type: t, enonce: '', options: t === 'qcm' || t === 'multi' ? ['', '', '', ''] : [], k: t === 'multi' ? [] : t === 'qcm' ? 0 : null, points: 1 }); redraw(); });
+    b.querySelectorAll('[data-qdel]').forEach(e => e.onclick = () => { sync(); Q.splice(+e.dataset.qdel, 1); redraw(); });
+    b.querySelectorAll('[data-type]').forEach(e => e.onchange = () => { sync(); const x = Q[+e.dataset.type]; x.type = e.value; x.options = x.type === 'qcm' || x.type === 'multi' ? (x.options?.length ? x.options : ['', '', '', '']) : []; x.k = x.type === 'multi' ? [] : x.type === 'qcm' ? 0 : null; redraw(); });
+    b.querySelectorAll('[data-optadd]').forEach(e => e.onclick = () => { sync(); Q[+e.dataset.optadd].options.push(''); redraw(); });
+    b.querySelectorAll('[data-optdel]').forEach(e => e.onclick = () => { sync(); const x = Q[+e.dataset.optdel], j = +e.dataset.j; x.options.splice(j, 1); if (x.type === 'qcm') x.k = x.k === j ? 0 : x.k > j ? x.k - 1 : x.k; else x.k = (x.k || []).filter(v => v !== j).map(v => v > j ? v - 1 : v); redraw(); });
+  };
+  wire();
+  const save = async () => {
+    if (!meta.formationId || !meta.titre) { toast('Choisissez la formation et donnez un titre.', 'bad'); return false; }
+    if (!Q.length) { toast('Ajoutez au moins une question.', 'bad'); return false; }
+    const pub = [], cles = [];
+    for (const [i, x] of Q.entries()) {
+      if (!x.enonce.trim()) { toast(`Q${i + 1} : l'énoncé est vide.`, 'bad'); return false; }
+      if (x.type === 'qcm' || x.type === 'multi') {
+        const opts = x.options.map(o => o.trim()); if (opts.filter(Boolean).length < 2 || opts.some(o => !o)) { toast(`Q${i + 1} : remplissez au moins 2 réponses (et aucune vide).`, 'bad'); return false; }
+        if (x.type === 'qcm' && (x.k == null || x.k >= opts.length)) { toast(`Q${i + 1} : cochez la bonne réponse.`, 'bad'); return false; }
+        if (x.type === 'multi' && !(x.k || []).length) { toast(`Q${i + 1} : cochez au moins une bonne réponse.`, 'bad'); return false; }
+        pub.push({ type: x.type, enonce: x.enonce.trim(), options: opts, points: x.points }); cles.push(x.k);
+      } else if (x.type === 'vf') { if (x.k == null) { toast(`Q${i + 1} : indiquez si la bonne réponse est Vrai ou Faux.`, 'bad'); return false; } pub.push({ type: 'vf', enonce: x.enonce.trim(), options: ['Vrai', 'Faux'], points: x.points }); cles.push(x.k); }
+      else if (x.type === 'trou') {
+        const alts = []; let n = 0; const txt = x.enonce.replace(/\{\{([^}]*)\}\}/g, (_, a) => { alts.push(a.split('|').map(t => t.trim()).filter(Boolean)); return `[[${++n}]]`; });
+        if (!alts.length || alts.some(a => !a.length)) { toast(`Q${i + 1} : mettez au moins une réponse entre {{ }}.`, 'bad'); return false; }
+        pub.push({ type: 'trou', enonce: txt, nbTrous: alts.length, points: x.points }); cles.push(alts);
+      } else { pub.push({ type: x.type, enonce: x.enonce.trim(), points: x.points }); cles.push(x.type === 'courte' ? (x.k || '') : ''); }
+    }
+    const data = { formationId: meta.formationId, titre: meta.titre, consignes: meta.consignes, duree: meta.duree ? +meta.duree : '', limite: meta.limite, coef: +meta.coef || 1, questions: pub, majLe: new Date().toISOString() };
+    let id = q?.id;
+    if (id) await DB.update('quiz', id, data); else id = await DB.add('quiz', { ...data, publie: false, cloture: false, creeLe: new Date().toISOString(), creePar: S.user.email, creeParNom: S.user.nom });
+    await DB.set('quiz_cles', id, { formationId: meta.formationId, cles, corrigePublie: cle?.corrigePublie || false });
+    toast('Évaluation enregistrée (brouillon). Publiez-la quand elle est prête.', 'ok'); rerender();
+  };
+};
+ACT.quizPub = d => { const q = S.D.quiz.find(x => x.id === d.id); confirmBox(`Publier « ${esc(q.titre)} » ? Les apprenants de la formation seront notifiés et pourront répondre. Les questions ne pourront plus être modifiées après la première réponse.`, async () => { await DB.update('quiz', q.id, { publie: true, publieLe: new Date().toISOString() }); toast('Évaluation publiée', 'ok'); rerender(); }, 'Publier', 'btn-g'); };
+ACT.quizClose = d => confirmBox('Clôturer cette évaluation ? Plus aucune réponse ne sera acceptée.', async () => { await DB.update('quiz', d.id, { cloture: true }); toast('Évaluation clôturée'); rerender(); }, 'Clôturer', 'btn-p');
+ACT.quizCorr = d => {
+  const D = S.D, q = D.quiz.find(x => x.id === d.id), cle = (D.cles || []).find(c => c.id === q.id), reps = (D.reponses || []).filter(r => r.quizId === q.id);
+  const aCorr = reps.filter(r => corrigerQuiz(q, cle, r).manuel).length;
+  confirmBox(`${aCorr ? `<b>${aCorr} copie(s) contiennent encore des réponses à corriger</b> : elles n'auront pas de note tant que vous ne les aurez pas corrigées.<br><br>` : ''}Publier le corrigé et les notes de « ${esc(q.titre)} » ? Les apprenants verront leurs réponses, la correction et leur note, qui comptera dans leur moyenne.`, async () => { await DB.update('quiz_cles', q.id, { corrigePublie: true, publieLe: new Date().toISOString() }); await DB.update('quiz', q.id, { cloture: true }); toast('Corrigé et notes publiés', 'ok'); rerender(); }, 'Publier', 'btn-p');
+};
+ACT.quizDel = d => confirmBox('Supprimer cette évaluation (aucune réponse reçue) ?', async () => { await DB.remove('quiz', d.id); await DB.remove('quiz_cles', d.id).catch(() => { }); toast('Évaluation supprimée'); rerender(); }, 'Supprimer');
+ACT.quizRes = d => {
+  const D = S.D, q = D.quiz.find(x => x.id === d.id), cle = (D.cles || []).find(c => c.id === q.id), ins = enrolled(D, q.formationId);
+  openModal({ title: `Résultats — ${esc(q.titre)}`, wide: true, noFooter: true, body: `<div class="tbl-wrap"><table><thead><tr><th>Apprenant</th><th>Envoyé le</th><th>Points</th><th>Note /20</th><th></th></tr></thead><tbody>${ins.map(a => {
+    const r = (D.reponses || []).find(x => x.quizId === q.id && x.email === a.id); if (!r) return `<tr><td class="strong">${esc(a.nom)} ${esc(a.prenoms)}</td><td colspan="3"><span class="b b-g">Pas encore répondu</span></td><td></td></tr>`;
+    const c = corrigerQuiz(q, cle, r);
+    return `<tr><td class="strong">${esc(a.nom)} ${esc(a.prenoms)}</td><td class="small">${fDT(r.soumisLe)}</td><td>${c.pts}/${c.max}</td><td>${c.manuel ? '<span class="b b-r">À corriger</span>' : moyBadge(c.note20)}</td><td class="right">${can('quiz') ? `<button class="btn btn-o btn-s" data-act="quizCopie" data-id="${esc(r.id)}">${c.manuel ? 'Corriger' : 'Voir la copie'}</button>` : ''}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="center muted">Aucun apprenant inscrit</td></tr>'}</tbody></table></div>` });
+};
+// Copie d'un apprenant : affichage + notation manuelle des questions rédigées / devoirs
+function copieHTML(q, cle, r, opts = {}) {
+  const c = corrigerQuiz(q, cle, r), showKey = !!cle;
+  return (q.questions || []).map((x, i) => {
+    const rep = r?.reponses?.[i], k = cle?.cles?.[i], g = c.det[i];
+    let rendu = '';
+    if (x.type === 'qcm' || x.type === 'vf') rendu = (x.options || []).map((o, j) => `<div class="small" style="padding:2px 0">${String(rep) === String(j) ? '◉' : '○'} ${esc(o)}${showKey && String(k) === String(j) ? ' <span class="b b-v">bonne réponse</span>' : ''}</div>`).join('');
+    else if (x.type === 'multi') rendu = (x.options || []).map((o, j) => `<div class="small" style="padding:2px 0">${(rep || []).map(String).includes(String(j)) ? '☑' : '☐'} ${esc(o)}${showKey && (k || []).map(String).includes(String(j)) ? ' <span class="b b-v">bonne réponse</span>' : ''}</div>`).join('');
+    else if (x.type === 'trou') { let n = 0; rendu = `<div class="small">${esc(x.enonce).replace(/\[\[(\d+)\]\]/g, () => { const j = n++; const ok = showKey && (k?.[j] || []).map(normRep).includes(normRep(rep?.[j])); return `<b style="color:var(--${showKey ? (ok ? 'vert' : 'rouge') : 'ink'})">${esc(rep?.[j] || '…')}</b>${showKey && !ok ? ` <span class="muted">(${esc((k?.[j] || []).join(' / '))})</span>` : ''}`; })}</div>`; }
+    else if (x.type === 'lien') rendu = rep ? `<a href="${esc(rep)}" target="_blank" rel="noopener">${esc(rep)}</a>` : '<span class="muted">Aucun lien déposé</span>';
+    else rendu = `<div class="small" style="white-space:pre-line;background:var(--bg);padding:8px;border-radius:8px">${esc(rep || '—')}</div>${showKey && k && !isStudent() ? `<div class="small muted">Attendu : ${esc(k)}</div>` : ''}`;
+    const manuelle = x.type === 'courte' || x.type === 'lien';
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="display:flex;gap:8px"><b>Q${i + 1}.</b><div style="flex:1">${x.type === 'trou' ? '' : esc(x.enonce)}</div>${opts.noter && manuelle ? `<input class="inp" style="width:90px" type="number" min="0" max="${x.points || 1}" step="0.25" data-man="${i}" value="${esc(r?.manuel?.[i] ?? '')}" placeholder="/${x.points || 1}">` : `<span class="b ${g == null ? 'b-o' : g >= (x.points || 1) ? 'b-v' : g > 0 ? 'b-o' : 'b-r'}">${g == null ? 'à corriger' : Math.round(g * 100) / 100 + '/' + (x.points || 1)}</span>`}</div><div style="margin:6px 0 0 28px">${rendu}</div></div>`;
+  }).join('');
+}
+ACT.quizCopie = d => {
+  const D = S.D, r = D.reponses.find(x => x.id === d.id), q = D.quiz.find(x => x.id === r.quizId), cle = (D.cles || []).find(c => c.id === q.id);
+  const aNoter = (q.questions || []).some(x => x.type === 'courte' || x.type === 'lien');
+  openModal({ title: `Copie de ${esc(aName(D, r.email))}`, wide: true, ok: 'Enregistrer la correction', okClass: 'btn-g', body: copieHTML(q, cle, r, { noter: true }),
+    onOk: aNoter ? async (m) => { const man = { ...(r.manuel || {}) }; m.querySelectorAll('[data-man]').forEach(i => { if (i.value !== '') man[i.dataset.man] = Math.min(+i.max, Math.max(0, +i.value)); }); await DB.update('reponses', r.id, { manuel: man, corrigePar: S.user.email, corrigeLe: new Date().toISOString() }); toast('Correction enregistrée', 'ok'); rerender(); } : null });
+};
+
+// --- Espace apprenant
+PAGES.mesquiz = D => {
+  const a = D.apprenants[0] || {}, me = S.user.email;
+  const L = (D.quiz || []).filter(q => q.publie && (a.formations || []).includes(q.formationId)).sort((x, y) => (y.publieLe || '').localeCompare(x.publieLe || ''));
+  return `<div class="alert info">${IC.info}<div>Une seule tentative par évaluation. Votre note apparaît quand le formateur publie le corrigé ; elle compte alors dans votre moyenne.</div></div>
+  <div class="grid g2">${L.map(q => {
+    const r = (D.reponses || []).find(x => x.quizId === q.id), cle = (D.cles || []).find(c => c.id === q.id), c = r && cle ? corrigerQuiz(q, cle, r) : null;
+    const expire = q.limite && q.limite < TODAY();
+    const etat = r ? (c ? (c.manuel ? '<span class="b b-o">Correction en cours</span>' : `<span class="b b-v">Note : ${c.note20.toFixed(2)}/20</span>`) : '<span class="b b-b">Envoyé — en attente du corrigé</span>') : q.cloture || expire ? '<span class="b b-r">Fermé — non rendu</span>' : '<span class="b b-o">À faire</span>';
+    return `<div class="card"><div class="card-b"><div style="margin-bottom:8px">${etat}</div><h3 style="font-size:15px">${esc(q.titre)}</h3><div class="small muted">${esc(fName(D, q.formationId))} · ${(q.questions || []).length} question(s)${q.duree ? ' · ' + q.duree + ' min' : ''}${q.limite ? ' · avant le ' + fDate(q.limite) : ''}</div>${q.consignes ? `<p class="small" style="margin-top:8px">${esc(q.consignes)}</p>` : ''}</div>
+      <div style="padding:12px 18px;border-top:1px solid var(--line)">${!r && !q.cloture && !expire ? `<button class="btn btn-p" data-act="quizPasser" data-id="${q.id}">${IC.check} Commencer</button>` : r && cle ? `<button class="btn btn-o" data-act="quizMaCopie" data-id="${q.id}">${IC.eye} Voir ma correction</button>` : ''}</div></div>`;
+  }).join('') || `<div class="card">${empty('Aucune évaluation en ligne pour vos formations.', IC.check)}</div>`}</div>`;
+};
+ACT.quizMaCopie = d => { const D = S.D, q = D.quiz.find(x => x.id === d.id), cle = D.cles.find(c => c.id === q.id), r = D.reponses.find(x => x.quizId === q.id), c = corrigerQuiz(q, cle, r); openModal({ title: `${esc(q.titre)} — ${c.manuel ? 'correction en cours' : c.note20.toFixed(2) + '/20'}`, wide: true, noFooter: true, body: copieHTML(q, cle, r) }); };
+ACT.quizPasser = d => {
+  const D = S.D, q = D.quiz.find(x => x.id === d.id); let fini = false, timer = null;
+  const qs = (q.questions || []).map((x, i) => {
+    const head = `<div style="display:flex;gap:8px;margin-bottom:8px"><b>Q${i + 1}.</b><div style="flex:1">${x.type === 'trou' ? 'Complétez :' : esc(x.enonce)}</div><span class="b b-p">${x.points || 1} pt</span></div>`;
+    let f = '';
+    if (x.type === 'qcm' || x.type === 'vf') f = (x.options || []).map((o, j) => `<label class="appel-row" style="cursor:pointer;gap:10px"><input type="radio" name="r${i}" value="${j}"> ${esc(o)}</label>`).join('');
+    else if (x.type === 'multi') f = `<div class="small muted">Plusieurs réponses possibles.</div>` + (x.options || []).map((o, j) => `<label class="appel-row" style="cursor:pointer;gap:10px"><input type="checkbox" name="r${i}" value="${j}"> ${esc(o)}</label>`).join('');
+    else if (x.type === 'trou') { let n = 0; f = `<div style="line-height:2.4">${esc(x.enonce).replace(/\[\[(\d+)\]\]/g, () => `<input class="inp" style="display:inline-block;width:150px;padding:6px 8px" data-trou="${i}" data-j="${n++}" autocomplete="off">`)}</div>`; }
+    else if (x.type === 'lien') f = `<input class="inp" type="url" name="r${i}" placeholder="https:// (lien Google Drive, GitHub, Canva…)">`;
+    else f = `<textarea class="inp" rows="4" name="r${i}" placeholder="Votre réponse"></textarea>`;
+    return `<div class="card" style="margin-bottom:12px"><div class="card-b">${head}${f}</div></div>`;
+  }).join('');
+  const m = openModal({ title: esc(q.titre), wide: true, ok: 'Envoyer mes réponses', okClass: 'btn-g',
+    body: `${q.consignes ? `<div class="alert info">${IC.info}<div>${esc(q.consignes)}</div></div>` : ''}${q.duree ? `<div class="alert warn" id="qzTimer">${IC.clock}<div>Temps restant : <b id="qzT">${q.duree}:00</b> — envoi automatique à la fin.</div></div>` : ''}${qs}`,
+    onOk: async () => envoyer(false) });
+  const lire = () => (q.questions || []).map((x, i) => {
+    if (x.type === 'qcm' || x.type === 'vf') { const c = m.querySelector(`[name="r${i}"]:checked`); return c ? +c.value : null; }
+    if (x.type === 'multi') return [...m.querySelectorAll(`[name="r${i}"]:checked`)].map(e => +e.value);
+    if (x.type === 'trou') return [...m.querySelectorAll(`[data-trou="${i}"]`)].map(e => e.value.trim());
+    return (m.querySelector(`[name="r${i}"]`)?.value || '').trim();
+  });
+  const envoyer = async (auto) => {
+    if (fini) return; const reps = lire();
+    const vides = reps.filter(r => r == null || r === '' || (Array.isArray(r) && (!r.length || r.every(v => v === '')))).length;
+    if (!auto && vides && !window.__qzOk) { window.__qzOk = true; toast(`${vides} question(s) sans réponse. Cliquez encore sur « Envoyer » pour confirmer.`, 'bad'); setTimeout(() => window.__qzOk = false, 6000); return false; }
+    fini = true; clearInterval(timer);
+    await DB.set('reponses', repId(q.id, S.user.email), { quizId: q.id, formationId: q.formationId, email: S.user.email, reponses: reps, soumisLe: new Date().toISOString(), auto: !!auto });
+    toast(auto ? 'Temps écoulé : vos réponses ont été envoyées.' : 'Réponses envoyées ✅', 'ok'); closeModal(); rerender();
+  };
+  if (q.duree) { const fin = Date.now() + q.duree * 60000; timer = setInterval(() => { const s = Math.max(0, Math.round((fin - Date.now()) / 1000)); const el = m.querySelector('#qzT'); if (el) el.textContent = `${Math.floor(s / 60)}:${pad(s % 60)}`; if (!s) envoyer(true).catch(e => toast(e.message, 'bad')); if (!document.body.contains(m) || m.classList.contains('hidden')) clearInterval(timer); }, 1000); }
+};
 
 // ------------------------------------------------------------
 // 9. CONNEXION
@@ -915,7 +1344,7 @@ async function resolveRole(email, displayName) {
   const u = await DB.get('users', email).catch(() => null);
   if (u) {
     const r = acaRole(u);
-    if (r) return { user: { email, nom: u.nom || displayName }, role: r };
+    if (r) return { user: { email, nom: u.nom || displayName, comm: estComm(u) }, role: r };
     if (u.actif === false) throw new Error('Votre compte CVPB Manager est désactivé.');
   }
   // 2) Étudiant : doit être rattaché à l'Académie ET figurer « Actif » dans la liste etudiants de CVPB Manager
@@ -952,14 +1381,14 @@ async function initFirebase() {
 
 function initDemo() {
   DemoDB.load();
-  const picks = [['president', 'Président'], ['vp', 'Vice-président'], ['sg', 'Secrétaire général'], ['resp_formation', 'Resp. Formation'], ['resp_suivi', 'Resp. Suivi & Accomp.'], ['formateur', 'Formateur'], ['encaissement', 'Resp. Encaissements'], ['caisse', 'Resp. Caisse'], ['etudiant', 'Étudiant'], ['horsliste', 'Étudiant retiré de la liste'], ['inconnu', 'Étudiant inconnu']];
+  const picks = [['president', 'Président'], ['vp', 'Vice-président'], ['sg', 'Secrétaire général'], ['resp_formation', 'Resp. Formation'], ['resp_suivi', 'Resp. Suivi & Accomp.'], ['formateur', 'Formateur'], ['encaissement', 'Resp. Encaissements'], ['caisse', 'Resp. Caisse'], ['communication', 'Commission Communication'], ['etudiant', 'Étudiant'], ['horsliste', 'Étudiant retiré de la liste'], ['inconnu', 'Étudiant inconnu']];
   $('#demoBox').classList.remove('hidden');
   $('#demoGrid').innerHTML = picks.map(([r, l]) => `<button data-r="${r}">${l}</button>`).join('');
   $('#demoGrid').onclick = async e => {
     const b = e.target.closest('button'); if (!b) return;
     const r = b.dataset.r;
     const ROLE_DEMO = { president: 'president', vp: 'vicepresident', sg: 'secretaire', resp_formation: 'formation', resp_suivi: 'accompagnement', formateur: 'pedagogie', encaissement: 'encaissement', caisse: 'caisse' };
-    const email = r === 'etudiant' ? DemoDB.data.apprenants[1].id : r === 'horsliste' ? DemoDB.data.apprenants[11].id : r === 'inconnu' ? 'etudiant.inconnu@' + CONFIG.allowedDomain : DemoDB.data.users.find(u => u.role === ROLE_DEMO[r]).id;
+    const email = r === 'communication' ? DemoDB.data.users.find(u => (u.commissions || []).includes('COMMUNICATION') && u.role === 'membre').id : r === 'etudiant' ? DemoDB.data.apprenants[1].id : r === 'horsliste' ? DemoDB.data.apprenants[11].id : r === 'inconnu' ? 'etudiant.inconnu@' + CONFIG.allowedDomain : DemoDB.data.users.find(u => u.role === ROLE_DEMO[r]).id;
     try { const x = await resolveRole(email); localStorage.setItem('cvpba_demo_who', email); await enterApp(x.user, x.role); } catch (err) { localStorage.removeItem('cvpba_demo_who'); showLogin(err.message); }
   };
   $('#btnGoogle').onclick = () => showLogin('Mode démonstration : Firebase n\'est pas encore configuré (voir <b>config.js</b>). Choisissez un profil ci-dessous.');
@@ -986,23 +1415,24 @@ function seedDemo() {
   const users = [
     ['demo.president', 'Président CVPB (démo)', 'president'], ['demo.vp', 'Awa KONÉ', 'vicepresident'], ['demo.sg1', 'Serge N\'GUESSAN', 'secretaire'], ['demo.sg2', 'Mariam DIABATÉ', 'secretaire'], ['demo.sg3', 'Hervé KOUAMÉ', 'secretaire'],
     ['demo.formation', 'Fatou BAMBA', 'formation'], ['demo.suivi', 'Didier YAO', 'accompagnement'], ['demo.formateur', 'Koffi ASSI', 'pedagogie'], ['demo.formateur2', 'Aïcha TRAORÉ', 'pedagogie'],
-    ['demo.encaissement', 'Christelle AKA', 'encaissement'], ['demo.caisse', 'Bintou OUATTARA', 'caisse'], ['demo.tuteur', 'Yves GNAMIEN', 'tuteur']
-  ].map(([e, nom, role]) => ({ id: e + dom, nom, role, actif: true }));
+    ['demo.encaissement', 'Christelle AKA', 'encaissement'], ['demo.caisse', 'Bintou OUATTARA', 'caisse'], ['demo.tuteur', 'Yves GNAMIEN', 'tuteur'], ['demo.com', 'Grâce N\'DA', 'membre']
+  ].map(([e, nom, role]) => ({ id: e + dom, nom, role, actif: true, ...(e === 'demo.com' ? { commissions: ['COMMUNICATION'] } : {}) }));
   const formations = [
     { id: 'f1', titre: 'IA & outils numériques', domaine: DOMAINES[0], formateurEmail: 'demo.formateur' + dom, formateurNom: 'Koffi ASSI', jour: 'Samedi', heure: '09h00 – 11h00', lieu: 'Salle CVPB, Port-Bouët', statut: 'En cours' },
     { id: 'f2', titre: 'Bureautique : Word, Excel, PowerPoint', domaine: DOMAINES[1], formateurEmail: 'demo.formateur2' + dom, formateurNom: 'Aïcha TRAORÉ', jour: 'Samedi', heure: '11h30 – 13h30', lieu: 'Salle CVPB, Port-Bouët', statut: 'En cours' },
+    { id: 'f4', titre: 'Développement web : HTML, CSS, JavaScript', domaine: DOMAINES[2], niveau: 'Licence 2', formateurEmail: 'demo.formateur' + dom, formateurNom: 'Koffi ASSI', jour: 'Samedi', heure: '16h30 – 18h00', lieu: 'Google Meet', statut: 'À venir' },
     { id: 'f3', titre: 'Design graphique avec Canva & Figma', domaine: DOMAINES[3], formateurEmail: 'demo.formateur' + dom, formateurNom: 'Koffi ASSI', jour: 'Samedi', heure: '14h00 – 16h00', lieu: 'Google Meet', statut: 'En cours' }
   ];
   // Liste « etudiants » de CVPB Manager (fictive)
   const noms = ['Kouassi Jean-Marc', 'Diallo Aminata', 'N\'Dri Paul Ézéchiel', 'Coulibaly Salimata', 'Gbagbo Ange', 'Touré Moussa', 'Adjoumani Prisca', 'Soro Ibrahim', 'Konan Grâce', 'Brou Emmanuel', 'Ouédraogo Rasmata', 'Essis Laetitia', 'Yapi Christ', 'Aka Rebecca', 'Bamba Issouf'];
   const specs = ['Développement d\'Application et e-Services (IAN-DAS)', 'Réseaux et Sécurité Informatique (IAN-RSI)', 'Multimédia et Arts Numériques (IAN-MMX)', 'Communication Digitale (HSN-COM)'];
-  const etudiants = noms.map((n, i) => ({ id: `CVPB-26-${String(i + 1).padStart(4, '0')}`, matricule: `CVPB-26-${String(i + 1).padStart(4, '0')}`, nom: n, niveau: 'Licence 1', specialite: specs[i % 4], statut: i === 11 ? 'Inactif' : 'Actif', academie: i < 12 }));
+  const etudiants = noms.map((n, i) => ({ id: `CVPB-26-${String(i + 1).padStart(4, '0')}`, matricule: `CVPB-26-${String(i + 1).padStart(4, '0')}`, nom: n, niveau: i >= 12 ? 'Licence 2' : 'Licence 1', specialite: specs[i % 4], statut: i === 11 ? 'Inactif' : 'Actif', academie: i < 12 }));
   const slug = n => n.normalize('NFD').replace(/[̀-ͯ']/g, '').toLowerCase().split(/\s+/);
   // Rattachement à l'Académie : e-mail UVCI -> matricule CVPB (les 12 premiers ; le 12e a été passé « Inactif »)
   const apprenants = etudiants.slice(0, 12).map((e, i) => { const w = slug(e.nom); return { id: `${w[1].split('-')[0]}.${w[0]}${dom}`, matricule: e.id, formations: i % 3 === 0 ? ['f1', 'f2'] : i % 3 === 1 ? ['f2', 'f3'] : ['f1', 'f3'], statut: i === 10 ? 'Suspendu' : 'Actif', dateInscription: past[0] }; });
   const seances = [], presences = [], exercices = [], notes = [];
   const themes = { f1: ['Prise en main de ChatGPT & Claude', 'Rédiger de bons prompts', 'IA pour la recherche documentaire', 'IA & présentations', 'Projet : assistant d\'étude', 'Bilan & évaluation'], f2: ['Mise en forme Word', 'Tableaux Excel & formules', 'Graphiques Excel', 'PowerPoint efficace', 'Mini-projet bureautique', 'Évaluation'], f3: ['Bases du design', 'Canva : affiches', 'Typographie & couleurs', 'Figma : premiers écrans', 'Projet visuel', 'Présentation des projets'] };
-  formations.forEach(f => {
+  formations.filter(f => f.statut === 'En cours').forEach(f => {
     [...past, ...fut].forEach((dt, k) => {
       const sid = `${f.id}_s${k}`, tenue = dt < TODAY();
       seances.push({ id: sid, formationId: f.id, date: dt, heure: f.heure, theme: themes[f.id][k] || 'Séance', statut: tenue ? 'Tenue' : 'Programmée' });
@@ -1033,5 +1463,33 @@ function seedDemo() {
     { id: 'n4', dest: me, cat: 'assiduite', titre: 'Retard enregistré', message: 'Bureautique — séance de samedi dernier.', date: iso(10), lu: false },
     { id: 'n5', dest: s1.id, cat: 'sanction', titre: 'Sanction : Avertissement', message: 'Motif : Trois absences non justifiées consécutives.', date: iso(5), lu: false }
   ];
-  return { settings: [{ id: 'general', ...DEFAULT_SETTINGS }], users, formations, etudiants, apprenants, seances, presences, exercices, notes, encaissements, sanctions, activites, notifications, annonces: [{ id: 'an1', titre: 'Nouvelle activité : Atelier CV & LinkedIn', message: 'Inscrivez-vous auprès de votre délégué.', cible: 'Tous les apprenants', nb: 11, date: iso(20), par: 'demo.sg1' + dom }] };
+  // Démo CVPB Manager : une formation du catalogue et deux séances pointées (format réel : presences { matricule: code })
+  const mgr_formations = [{ id: 'L1-01', code: 'L1-01', intitule: 'Initiation aux outils Office', niveau: 'Licence 1', formateurs: ['demo.formateur2' + dom], statut: 'En cours' }];
+  const pres = (cs) => Object.fromEntries(etudiants.slice(0, 8).map((e, i) => [e.id, cs[i]]));
+  const mgr_seances = [
+    { id: 'MS1', date: past[1], formation: 'L1-01', presences: pres(['P', 'P', 'R', 'P', 'A', 'P', 'P', 'J']), validation: { statut: 'Validée' } },
+    { id: 'MS2', date: past[past.length - 1], formation: 'L1-01', presences: pres(['P', 'A', 'P', 'P', 'A', 'R', 'P', 'P']), validation: { statut: 'Soumise' } }
+  ];
+  const mgr_programme = [
+    { id: 'PG1', type: 'academie', formation: 'L1-01', titre: 'Excel : tableaux et formules', date: fut[0], hDebut: '09:00', hFin: '11:00', mode: 'Présentiel', lieu: 'Salle CVPB, Port-Bouët', statut: 'Programmée', historique: [{}], creeLe: new Date(Date.now() - 2 * 3600e3).toISOString() },
+    { id: 'PG2', type: 'tutorat', formation: '', titre: 'Tutorat (ne concerne pas l\'Académie)', date: fut[0], statut: 'Programmée' }
+  ];
+  mgr_programme.push({ id: 'PG3', type: 'communaute', titre: 'Journée de salubrité à Port-Bouët', date: fut[1] || fut[0], hDebut: '08:00', hFin: '12:00', mode: 'Présentiel', lieu: 'Mairie de Port-Bouët', statut: 'Programmée', historique: [{}] },
+    { id: 'PG4', type: 'academie', formation: 'L1-01', titre: 'Word : mise en page avancée', date: fut[1] || fut[0], hDebut: '09:00', hFin: '11:00', mode: 'Présentiel', lieu: 'Salle CVPB', statut: 'Programmée', historique: [{}] });
+  const validations = [{ id: 'PG1', statut: 'Validée', type: 'academie', date: fut[0], hDebut: '09:00', par: 'demo.formation' + dom, parNom: 'Fatou BAMBA', le: iso(3) }, { id: 'PG3', statut: 'Validée', type: 'communaute', date: fut[1] || fut[0], hDebut: '08:00', par: 'demo.president' + dom, parNom: 'Président CVPB (démo)', le: iso(2) }];
+  const infos = [
+    { id: 'i1', titre: 'Inscriptions ouvertes : formation Développement web (L2)', categorie: 'Annonce', cible: 'Licence 2', contenu: 'Les étudiants de Licence 2 peuvent s\'inscrire à la formation Développement web (HTML, CSS, JavaScript). Démarrage samedi prochain.', date: iso(26), auteur: 'demo.com' + dom, auteurNom: 'Grâce N\'DA', epingle: false },
+    { id: 'i2', titre: 'Rappel : port du T-shirt CVPB obligatoire samedi', categorie: 'Rappel', cible: 'Tous', contenu: 'Pour la photo de groupe de la CVPB Académie, merci de venir avec votre T-shirt CVPB samedi.', date: iso(6), auteur: 'demo.com' + dom, auteurNom: 'Grâce N\'DA', epingle: true },
+    { id: 'i3', titre: 'Opportunité : stage en marketing digital', categorie: 'Opportunité (stage, emploi, bourse)', cible: 'Tous', contenu: 'Une agence d\'Abidjan recherche 2 stagiaires (3 mois). Envoyez votre CV avant vendredi.', lien: 'https://forms.gle/exemple', date: iso(30), auteur: 'demo.com' + dom, auteurNom: 'Grâce N\'DA', epingle: false }
+  ];
+  const quiz = [{ id: 'qz1', formationId: 'f2', titre: 'Quiz n°1 — Bases d\'Excel', consignes: 'Répondez sans votre support de cours. Bonne chance !', duree: 15, limite: fut[0], coef: 1, publie: true, cloture: false, publieLe: iso(8), creeLe: iso(9), creePar: 'demo.formateur2' + dom, questions: [
+    { type: 'qcm', enonce: 'Quelle formule calcule la somme des cellules A1 à A5 ?', options: ['=SOMME(A1:A5)', '=TOTAL(A1;A5)', '=ADD(A1-A5)', '=A1+A5'], points: 2 },
+    { type: 'vf', enonce: 'Une référence absolue s\'écrit avec le symbole $ (ex. $A$1).', options: ['Vrai', 'Faux'], points: 1 },
+    { type: 'multi', enonce: 'Quels éléments sont des types de graphiques Excel ?', options: ['Histogramme', 'Secteurs', 'Diapositive', 'Courbes'], points: 2 },
+    { type: 'trou', enonce: 'Pour figer la première ligne, on utilise la commande [[1]] les volets ; la fonction [[2]] renvoie la moyenne.', nbTrous: 2, points: 2 },
+    { type: 'courte', enonce: 'Expliquez en deux phrases à quoi sert un tableau croisé dynamique.', points: 3 }] },
+    { id: 'qz2', formationId: 'f3', titre: 'Devoir : affiche de la CVPB Académie', consignes: 'Réalisez une affiche sur Canva et déposez le lien de partage.', duree: '', limite: fut[1] || fut[0], coef: 2, publie: true, cloture: false, publieLe: iso(4), creeLe: iso(5), creePar: 'demo.formateur' + dom, questions: [{ type: 'lien', enonce: 'Lien de votre affiche (Canva, Drive…)', points: 20 }] }];
+  const quiz_cles = [{ id: 'qz1', formationId: 'f2', cles: [0, 0, [0, 1, 3], [['figer'], ['MOYENNE', 'moyenne()']], 'Résumer et analyser de grandes données ; regrouper, filtrer, calculer des totaux.'], corrigePublie: false }, { id: 'qz2', formationId: 'f3', cles: [''], corrigePublie: false }];
+  const reponses = apprenants.filter(a => a.formations.includes('f2')).slice(2, 6).map((a, i) => ({ id: repId('qz1', a.id), quizId: 'qz1', formationId: 'f2', email: a.id, reponses: [i % 3 ? 0 : 1, 0, i % 2 ? [0, 1, 3] : [0, 1], ['figer', i % 2 ? 'MOYENNE' : 'somme'], 'Il sert à résumer un grand tableau de données.'], soumisLe: iso(20 - i), ...(i < 2 ? { manuel: { 4: 2 + i } } : {}) }));
+  return { quiz, quiz_cles, reponses, infos, validations, mgr_formations, mgr_seances, mgr_programme, settings: [{ id: 'general', ...DEFAULT_SETTINGS }], users, formations, etudiants, apprenants, seances, presences, exercices, notes, encaissements, sanctions, activites, notifications, annonces: [{ id: 'an1', titre: 'Nouvelle activité : Atelier CV & LinkedIn', message: 'Inscrivez-vous auprès de votre délégué.', cible: 'Tous les apprenants', nb: 11, date: iso(20), par: 'demo.sg1' + dom }] };
 }
