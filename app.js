@@ -84,16 +84,16 @@ const PEDAGO = ['president', 'resp_formation', 'resp_suivi'];
 
 // pages visibles par rôle
 const NAV = {
-  president: ['home', 'calendrier', 'validations', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'assiduite', 'sanctions', '|Finances', 'paiements', '|Communication', 'informations', 'annonces', 'notifications', '|Administration', 'utilisateurs', 'parametres'],
-  vp: ['home', 'calendrier', 'validations', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'assiduite', 'sanctions', '|Finances', 'paiements', '|Communication', 'informations', 'annonces', 'notifications', '|Administration', 'utilisateurs', 'parametres'],
-  sg: ['home', 'calendrier', '|Membres & activités', 'apprenants', 'formations', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
-  resp_formation: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
-  resp_suivi: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
-  formateur: ['home', 'calendrier', '|Mes formations', 'seances', 'exercices', 'quiz', 'assiduite', '|Communication', 'informations', 'notifications'],
+  president: ['home', 'calendrier', 'validations', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'aides', 'assiduite', 'sanctions', '|Finances', 'paiements', '|Communication', 'informations', 'annonces', 'notifications', '|Administration', 'utilisateurs', 'parametres', 'donnees'],
+  vp: ['home', 'calendrier', 'validations', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'aides', 'assiduite', 'sanctions', '|Finances', 'paiements', '|Communication', 'informations', 'annonces', 'notifications', '|Administration', 'utilisateurs', 'parametres'],
+  sg: ['home', 'calendrier', '|Membres & activités', 'apprenants', 'formations', 'aides', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
+  resp_formation: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'aides', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
+  resp_suivi: ['home', 'calendrier', '|Pédagogie', 'formations', 'apprenants', 'seances', 'exercices', 'quiz', 'aides', 'assiduite', 'sanctions', '|Communication', 'informations', 'annonces', 'notifications'],
+  formateur: ['home', 'calendrier', '|Mes formations', 'seances', 'exercices', 'quiz', 'aides', 'assiduite', '|Communication', 'informations', 'notifications'],
   encaissement: ['home', 'calendrier', '|Finances', 'paiements', 'apprenants', '|Communication', 'informations', 'notifications'],
   caisse: ['home', 'calendrier', '|Finances', 'paiements', 'apprenants', '|Communication', 'informations', 'notifications'],
   communication: ['home', 'calendrier', '|Communication', 'informations', 'notifications'],
-  etudiant: ['home', 'mesformations', 'mesquiz', 'mesnotes', 'mespaiements', 'informations', 'discipline', 'calendrier', 'notifications']
+  etudiant: ['home', 'mesformations', 'aide', 'mesquiz', 'mesnotes', 'mespaiements', 'informations', 'discipline', 'calendrier', 'notifications']
 };
 // pages modifiables par rôle (le reste est en lecture seule)
 const EDIT = {
@@ -115,9 +115,9 @@ const PAGE_META = {
   annonces: ['Annonces', IC.mega], notifications: ['Notifications', IC.bell],
   utilisateurs: ['Utilisateurs & accès', IC.shield], parametres: ['Paramètres', IC.gear],
   quiz: ['Quiz & évaluations', IC.check], mesquiz: ['Mes évaluations', IC.check], informations: ['Informations', IC.mega], validations: ['Validation des séances', IC.ok],
-  mesformations: ['Mes formations', IC.book], mesnotes: ['Mes notes', IC.star], mespaiements: ['Mes paiements', IC.money], discipline: ['Discipline', IC.gavel]
+  mesformations: ['Mes formations', IC.book], aide: ['Compréhension & aide', IC.info], aides: ['Demandes d\'aide', IC.info], donnees: ['Éditeur de données', IC.shield], mesnotes: ['Mes notes', IC.star], mespaiements: ['Mes paiements', IC.money], discipline: ['Discipline', IC.gavel]
 };
-const SHORT = { mesquiz: 'Quiz', quiz: 'Quiz', informations: 'Infos', validations: 'Valider', home: 'Accueil', mesformations: 'Formations', mespaiements: 'Paiements', mesnotes: 'Notes', notifications: 'Alertes', seances: 'Appel', exercices: 'Notes', paiements: 'Finances', sanctions: 'Discipline' };
+const SHORT = { aide: 'Aide', aides: 'Aide', donnees: 'Données', mesquiz: 'Quiz', quiz: 'Quiz', informations: 'Infos', validations: 'Valider', home: 'Accueil', mesformations: 'Formations', mespaiements: 'Paiements', mesnotes: 'Notes', notifications: 'Alertes', seances: 'Appel', exercices: 'Notes', paiements: 'Finances', sanctions: 'Discipline' };
 // Droits particuliers : Informations = commission COMMUNICATION de CVPB Manager + Président ;
 // Validation des séances = valideurs désignés dans Paramètres (séances Académie) + Président (tout).
 const peutInfo = () => S.role === 'president' || !!S.user?.comm;
@@ -136,7 +136,7 @@ const PRES_LABEL = { P: 'Présent', R: 'Retard', A: 'Absent', J: 'Absence justif
 const PRES_BADGE = { P: 'b-v', R: 'b-o', A: 'b-r', J: 'b-b' };
 const SANCTIONS = ['Avertissement', 'Blâme', 'Suspension temporaire', 'Exclusion de la formation'];
 const MODES = ['Espèces', 'Orange Money', 'MTN MoMo', 'Moov Money', 'Wave'];
-const NOTIF_CAT = { info: ['Information', IC.mega, 'v1'], quiz: ['Évaluation', IC.check, 'v5'], activite: ['Activité', IC.cal, 'v1'], paiement: ['Paiement', IC.money, 'v2'], sanction: ['Discipline', IC.gavel, 'v4'], note: ['Note', IC.star, 'v5'], assiduite: ['Assiduité', IC.check, 'v3'], annonce: ['Annonce', IC.mega, 'v1'] };
+const NOTIF_CAT = { info: ['Information', IC.mega, 'v1'], quiz: ['Évaluation', IC.check, 'v5'], activite: ['Activité', IC.cal, 'v1'], paiement: ['Paiement', IC.money, 'v2'], sanction: ['Discipline', IC.gavel, 'v4'], note: ['Note', IC.star, 'v5'], assiduite: ['Assiduité', IC.check, 'v3'], aide: ['Aide', IC.info, 'v5'], annonce: ['Annonce', IC.mega, 'v1'] };
 const DEFAULT_SETTINGS = { annee: '2026-2027', teeshirt: 5000, mensualite: 5000, moisDebut: '2026-11', moisFin: '2027-06', seuilAssiduite: 75, noteMin: 10 };
 
 // ------------------------------------------------------------
@@ -156,7 +156,7 @@ function acaRole(u) {
 // celles de CVPB Manager. « etudiants » et « encaissements » sont LUES dans CVPB Manager (lecture seule).
 const EXTERNES = ['etudiants', 'encaissements', 'users'];
 // Collections de CVPB Manager lues par l'Académie sous un autre nom (lecture seule)
-const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme', mgr_pt_tut: 'pointages_tutorat', mgr_pt_com: 'pointages_communaute', mgr_notes: 'notes_eleves', mgr_tshirts: 'tshirts' };
+const PHYS_MAP = { mgr_seances: 'seances', mgr_formations: 'formations', mgr_programme: 'programme', mgr_pt_tut: 'pointages_tutorat', mgr_pt_com: 'pointages_communaute', mgr_notes: 'notes_eleves', mgr_tshirts: 'tshirts', aides: 'demandes_aide' };
 const TYPES_PROG = ['academie', 'tutorat', 'communaute'];
 const QUIZ_ROLES = ['president', 'vp', 'resp_formation', 'resp_suivi', 'formateur'];
 const PHYS = c => PHYS_MAP[c] || (EXTERNES.includes(c) ? c : 'aca_' + c);
@@ -164,7 +164,7 @@ const CODES_PRES = ['P', 'R', 'J', 'A'];
 const COLS = ['settings', 'users', 'formations', 'apprenants', 'seances', 'presences', 'exercices', 'notes', 'paiements', 'caisse', 'sanctions', 'activites', 'notifications', 'annonces'];
 
 const DemoDB = {
-  KEY: 'cvpba_demo_v8',
+  KEY: 'cvpba_demo_v9',
   data: null,
   load() { try { this.data = JSON.parse(localStorage.getItem(this.KEY)); } catch { this.data = null; } if (!this.data) { this.data = seedDemo(); this.save(); } },
   save() { try { localStorage.setItem(this.KEY, JSON.stringify(this.data)); } catch { } },
@@ -229,6 +229,9 @@ async function loadData(force = false) {
     D.mgrNotes = lk ? await safe(DB.list('mgr_notes', { matricule: lk.matricule })) : [];
     // Taille de T-shirt choisie (lue par CVPB Manager pour la commande)
     D.tshirt = lk ? await DB.get('mgr_tshirts', lk.matricule).catch(() => null) : null;
+    // Compréhension des séances (ses réponses) et ses demandes d'aide
+    D.comprehension = await safe(DB.list('comprehension', { email: me }));
+    D.aides = await safe(DB.list('aides', { email: me }));
     D.mgrFormations = await safe(DB.list('mgr_formations'));
     D.mgrProgramme = lk ? await safe(DB.listIn('mgr_programme', ['type'], TYPES_PROG)) : [];
     // Évaluations en ligne : quiz publiés, corrigés publiés, et SES réponses
@@ -247,6 +250,8 @@ async function loadData(force = false) {
     D.mgrPtTut = lisentPointages ? await safe(DB.list('mgr_pt_tut')) : [];
     D.mgrPtCom = lisentPointages ? await safe(DB.list('mgr_pt_com')) : [];
     D.mgrNotes = lisentPointages ? await safe(DB.list('mgr_notes')) : [];
+    D.comprehension = AIDE_STAFF.includes(r) ? await safe(DB.list('comprehension')) : [];
+    D.aides = AIDE_STAFF.includes(r) ? await safe(DB.list('aides')) : [];
     D.mgrFormations = await safe(DB.list('mgr_formations'));
     D.mgrProgramme = await safe(DB.listIn('mgr_programme', ['type'], TYPES_PROG));
     const lisentQuiz = QUIZ_ROLES.includes(r);
@@ -267,7 +272,7 @@ async function loadData(force = false) {
   const ts = r === 'etudiant' && D.tshirt;
   const n9 = ts && ['Commandé', 'Remis'].includes(ts.statut) ? [{ id: 'ts_' + ts.statut, local: true, dest: me, cat: 'paiement', titre: ts.statut === 'Remis' ? 'T-shirt remis 👕' : 'T-shirt commandé 👕', message: ts.statut === 'Remis' ? `Votre T-shirt (taille ${ts.taille}) vous a été remis.` : `Votre T-shirt (taille ${ts.taille}) est commandé. Vous serez informé(e) de la remise.`, date: (ts.statut === 'Remis' ? ts.remisLe : ts.commandeLe) || '' }] : [];
   const n3 = r === 'etudiant' ? D.encaissements.map(e => ({ id: 'enc_' + e.id, local: true, dest: me, cat: 'paiement', titre: 'Paiement enregistré ✅', message: `${money(e.montant)} — ${e.nature || 'Paiement'}${e.mois ? ' (' + e.mois + ')' : ''} · ${e.mode || ''}${e.num ? ' · ' + e.num : ''}.`, date: (e.date || TODAY()) + 'T12:00:00' })) : [];
-  D.notifications = [...n1, ...n2, ...n3, ...n4, ...n5, ...n6, ...n7, ...n8, ...n9].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  D.notifications = [...n1, ...n2, ...n3, ...n4, ...n5, ...n6, ...n7, ...n8, ...n9, ...notifsAide(D, me, r)].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   D.__ok = true;
   S.D = D;
   return D;
@@ -1037,7 +1042,7 @@ ACT.annonceForm = () => {
 PAGES.notifications = D => {
   const f = S.nTab || 'all', list = D.notifications.filter(n => f === 'all' || (f === 'unread' ? !isRead(n) : n.cat === f));
   setTimeout(() => markRead(list.slice(0, 30).map(n => n.id)), 1500);
-  return `<div class="toolbar"><div class="tabs" style="margin:0">${[['all', 'Toutes'], ['unread', 'Non lues'], ['activite', 'Activités'], ['paiement', 'Paiements'], ['sanction', 'Discipline'], ['note', 'Notes'], ['assiduite', 'Assiduité']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-act="nTab" data-t="${k}">${l}</button>`).join('')}</div><span class="sp"></span><button class="btn btn-o btn-s" data-act="nAllRead">Tout marquer comme lu</button></div>
+  return `<div class="toolbar"><div class="tabs" style="margin:0">${[['all', 'Toutes'], ['unread', 'Non lues'], ['activite', 'Activités'], ['paiement', 'Paiements'], ['sanction', 'Discipline'], ['note', 'Notes'], ['assiduite', 'Assiduité'], ['aide', 'Aide']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-act="nTab" data-t="${k}">${l}</button>`).join('')}</div><span class="sp"></span><button class="btn btn-o btn-s" data-act="nAllRead">Tout marquer comme lu</button></div>
   <div class="card">${list.map(notifItem).join('') || empty('Aucune notification.', IC.bell)}</div>`;
 };
 ACT.nTab = d => { S.nTab = d.t; render(); };
@@ -1380,6 +1385,183 @@ PAGES.mesquiz = D => {
   }).join('') || `<div class="card">${empty('Aucune évaluation en ligne pour vos formations.', IC.check)}</div>`}</div>`;
 };
 ACT.quizMaCopie = d => { const D = S.D, q = D.quiz.find(x => x.id === d.id), cle = D.cles.find(c => c.id === q.id), r = D.reponses.find(x => x.quizId === q.id), c = corrigerQuiz(q, cle, r); openModal({ title: `${esc(q.titre)} — ${c.manuel ? 'correction en cours' : c.note20.toFixed(2) + '/20'}`, wide: true, noFooter: true, body: copieHTML(q, cle, r) }); };
+// ============================================================
+// COMPRÉHENSION DES SÉANCES (0 à 10) ET DEMANDES D'AIDE
+// - Après chaque séance où il était présent (Académie, tutorat, activité), l'apprenant note sa compréhension de 0 à 10.
+// - Il peut demander de l'aide à son formateur (formation) ou aux tuteurs de sa spécialité (tutorat) :
+//   la demande est enregistrée dans demandes_aide (lue par CVPB Académie ET CVPB Manager) et les destinataires sont notifiés.
+// ============================================================
+const AIDE_STAFF = ['president', 'vp', 'sg', 'resp_formation', 'resp_suivi', 'formateur'];
+const compId = (sid, email) => sid + '_' + lower(email).replace(/[^a-z0-9]/g, '_');
+const NIV_COMP = n => n == null ? ['—', 'b-g'] : n >= 8 ? ['Bien compris', 'b-v'] : n >= 5 ? ['Moyennement', 'b-o'] : ['Difficile', 'b-r'];
+const codeSpecEtu = a => codeSpec(a?.specialite || '') || (String(a?.specialite || '').match(/[A-Z]{2,5}-[A-Z]{2,5}/) || [])[0] || String(a?.specialite || '');
+// Séances suivies (présent ou en retard) par l'apprenant, les plus récentes d'abord
+function seancesSuivies(D, me, jours = 60) {
+  const lim = ymd(new Date(Date.now() - jours * 864e5)), t = TODAY();
+  const ids = new Set(D.presences.filter(p => p.email === me && (p.statut === 'P' || p.statut === 'R')).map(p => p.seanceId));
+  return D.seances.filter(s => ids.has(s.id) && s.date && s.date <= t && s.date >= lim).sort((a, b) => b.date.localeCompare(a.date));
+}
+const maComp = (D, sid) => (D.comprehension || []).find(c => c.seanceId === sid && c.email === S.user.email);
+// Destinataires d'une demande « formation » : formateur(s) de la formation (Académie et/ou CVPB Manager)
+function destFormation(D, fid) {
+  const f = D.formations.find(x => x.id === fid) || {}, L = new Set();
+  if (f.formateurEmail) L.add(lower(f.formateurEmail));
+  (f.formateurs || []).forEach(e => L.add(lower(e)));
+  const code = f.codeCVPB; if (code) ((D.mgrFormations || []).find(m => (m.code || m.id) === code)?.formateurs || []).forEach(e => L.add(lower(e)));
+  return [...L].filter(Boolean);
+}
+// Notification côté CVPB Manager (canaux : e_<email> pour une personne, rôle « tuteur » / « tuteurs » / « formation »)
+async function notifierManager(canaux, texte) {
+  if (DEMO || !S.fb?.auth?.currentUser) return;
+  const { doc, setDoc } = S.fb.fs, id = 'A' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const data = { le: new Date().toISOString(), par: S.fb.auth.currentUser.uid, parNom: S.user.nom || S.user.email, role: 'etudiant', action: 'aide', texte, pour: canaux };
+  await Promise.all(canaux.map(c => setDoc(doc(S.fb.db, 'notifs', c, 'items', id), data).catch(e => console.warn('notif', c, e))));
+}
+
+// ---------- Page apprenant ----------
+PAGES.aide = D => {
+  if (!isStudent()) return PAGES.aides(D);
+  const me = S.user.email, L = seancesSuivies(D, me), mes = (D.aides || []).filter(x => x.email === me).sort((a, b) => (b.creeLe || '').localeCompare(a.creeLe || ''));
+  const aNoter = L.filter(s => !maComp(D, s.id)).length;
+  const ligne = s => { const c = maComp(D, s.id), [lib, cl] = NIV_COMP(c?.note);
+    return `<div class="list-i" style="flex-wrap:wrap;gap:8px"><div style="flex:1;min-width:200px"><div class="t">${esc(s.theme || 'Séance')}</div><div class="s">${esc(fName(D, s.formationId))} · ${fDate(s.date)}</div></div>
+      <div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center">${Array.from({ length: 11 }, (_, n) => `<button class="btn btn-s ${c?.note === n ? (n >= 8 ? 'btn-g' : n >= 5 ? 'btn-p' : 'btn-d') : 'btn-o'}" style="min-width:34px;padding:6px 0" data-act="compNoter" data-sid="${esc(s.id)}" data-n="${n}" title="${n}/10">${n}</button>`).join('')}
+      ${c ? `<span class="b ${cl}" style="margin-left:6px">${c.note}/10 · ${lib}</span>` : ''}</div>
+      ${c && c.note < 5 ? `<div class="small" style="width:100%">Vous avez eu du mal ? <a href="#" data-act="aideForm" data-fid="${esc(s.formationId)}" data-sid="${esc(s.id)}">Demander de l'aide sur cette séance</a></div>` : ''}</div>`; };
+  return `<div class="alert info">${IC.info}<div>Après chaque séance, indiquez <b>votre niveau de compréhension de 0 (rien compris) à 10 (tout compris)</b>. Votre formateur ou tuteur voit la moyenne de la séance pour adapter la suite. Besoin d'explications ? <b>Demandez de l'aide</b> : votre formateur ou les tuteurs de votre spécialité sont notifiés.</div></div>
+  <div class="grid g2"><div class="card"><div class="card-h"><h3>Ma compréhension des séances</h3>${aNoter ? `<span class="b b-o">${aNoter} à noter</span>` : ''}</div>${L.map(ligne).join('') || empty('Aucune séance suivie ces 60 derniers jours.', IC.check)}</div>
+  <div class="card"><div class="card-h"><h3>Mes demandes d'aide</h3><button class="btn btn-p btn-s" data-act="aideForm">${IC.plus} Demander de l'aide</button></div>
+    ${mes.map(x => `<div class="list-i" style="display:block"><div style="display:flex;gap:8px;align-items:center"><div class="t" style="flex:1">${esc(x.sujet)}</div>${aideStatut(x)}</div>
+      <div class="s">${x.type === 'tutorat' ? `Tutorat · ${esc(x.specCode || '')} ${esc(x.niveau || '')}` : esc(x.formationTitre || '')} · ${fDT(x.creeLe)}</div>
+      <div class="small" style="margin-top:6px;white-space:pre-line">${esc(x.message)}</div>
+      ${(x.reponses || []).map(r => `<div class="small" style="margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--vert-l)"><b>${esc(r.parNom)}</b> · ${fDT(r.le)}<div style="white-space:pre-line;margin-top:4px">${esc(r.texte)}</div></div>`).join('')}
+      ${x.statut !== 'Résolue' ? `<div style="margin-top:8px"><button class="btn btn-o btn-s" data-act="aideResolue" data-id="${esc(x.id)}">${IC.ok} Mon problème est réglé</button></div>` : ''}</div>`).join('') || empty('Aucune demande. Vous bloquez sur un cours ? Cliquez sur « Demander de l\'aide ».', IC.info)}</div></div>`;
+};
+const aideStatut = x => `<span class="b ${x.statut === 'Résolue' ? 'b-v' : x.statut === 'Prise en charge' ? 'b-b' : 'b-o'}">${esc(x.statut || 'Nouvelle')}</span>`;
+ACT.compNoter = async d => {
+  const D = S.D, s = D.seances.find(x => x.id === d.sid); if (!s) return;
+  const a = D.apprenants[0] || {}, id = compId(s.id, S.user.email), n = +d.n;
+  const data = { seanceId: s.id, formationId: s.formationId, formationTitre: fName(D, s.formationId), source: s.source || 'aca', date: s.date, email: S.user.email, matricule: a.matricule || '', note: n, le: new Date().toISOString() };
+  try { await DB.set('comprehension', id, data); D.comprehension = [...(D.comprehension || []).filter(c => c.id !== id), { ...data, id }]; toast(`Compréhension ${n}/10 enregistrée`, 'ok'); render(); }
+  catch (e) { toast('Enregistrement impossible : ' + e.message, 'bad'); }
+};
+ACT.aideForm = d => {
+  const D = S.D, a = D.apprenants[0] || {};
+  const forms = D.formations.filter(f => (a.formations || []).includes(f.id) && !f.horsAcademie);
+  const sp = codeSpecEtu(a);
+  openModal({ title: 'Demander de l\'aide', ok: 'Envoyer la demande', okClass: 'btn-g', body: `
+    <div class="fld"><label>À qui ?</label><select class="inp" id="ai_t"><option value="formation">Au formateur d'une formation</option><option value="tutorat">Aux tuteurs de ma spécialité (${esc(sp || '—')} · ${esc(a.niveau || '')})</option></select></div>
+    <div class="fld" id="ai_fw"><label>Formation</label><select class="inp" id="ai_f">${forms.map(f => `<option value="${f.id}" ${f.id === d.fid ? 'selected' : ''}>${esc(f.titre)}</option>`).join('') || '<option value="">Aucune formation</option>'}</select></div>
+    <div class="fld"><label>Sujet <span style="color:var(--rouge)">*</span></label><input class="inp" id="ai_s" maxlength="100" placeholder="Ex. : Je ne comprends pas les formules RECHERCHEV" value="${d.sid ? esc('Séance du ' + fShort((D.seances.find(x => x.id === d.sid) || {}).date)) + ' : ' : ''}"></div>
+    <div class="fld"><label>Expliquez votre difficulté <span style="color:var(--rouge)">*</span></label><textarea class="inp" id="ai_m" rows="5" maxlength="1500" placeholder="Ce que vous avez compris, ce qui bloque, ce que vous avez déjà essayé…"></textarea></div>
+    <p class="small muted">Votre demande est visible par le(s) destinataire(s) et les responsables pédagogiques. Ne partagez pas d'informations personnelles inutiles.</p>`,
+    onOk: async m => {
+      const type = m.querySelector('#ai_t').value, fid = m.querySelector('#ai_f').value, sujet = m.querySelector('#ai_s').value.trim(), message = m.querySelector('#ai_m').value.trim();
+      if (sujet.length < 5 || message.length < 15) { toast('Précisez le sujet et expliquez votre difficulté (quelques phrases).', 'bad'); return false; }
+      if (type === 'formation' && !fid) { toast('Choisissez la formation.', 'bad'); return false; }
+      const f = D.formations.find(x => x.id === fid) || {}, dest = type === 'formation' ? destFormation(D, fid) : [];
+      const data = { email: S.user.email, matricule: a.matricule || '', nom: `${a.nom || ''} ${a.prenoms || ''}`.trim(), niveau: a.niveau || '', specialite: a.specialite || '', specCode: sp, type,
+        formationId: type === 'formation' ? fid : '', formationCode: type === 'formation' ? (f.codeCVPB || '') : '', formationTitre: type === 'formation' ? (f.titre || '') : 'Tutorat',
+        seanceId: d.sid || '', destinataires: dest, sujet, message, statut: 'Nouvelle', reponses: [], creeLe: new Date().toISOString() };
+      try {
+        const id = await DB.add('aides', data); D.aides = [...(D.aides || []), { ...data, id }];
+        const txt = `Demande d'aide de ${data.nom} (${type === 'tutorat' ? `tutorat ${sp} ${data.niveau}` : data.formationTitre}) : ${sujet}`;
+        notifierManager(type === 'tutorat' ? ['tuteur', 'tuteurs'] : [...dest.map(e => 'e_' + e), 'formation'], txt);
+        toast(type === 'formation' && !dest.length ? 'Demande envoyée aux responsables pédagogiques (aucun formateur n\'est encore affecté à cette formation).' : 'Demande envoyée ✅ Vous serez notifié(e) de la réponse.', 'ok'); render();
+      } catch (e) { toast('Envoi impossible : ' + e.message, 'bad'); return false; }
+    } });
+  const sync = () => { m2.querySelector('#ai_fw').style.display = m2.querySelector('#ai_t').value === 'formation' ? '' : 'none'; };
+  const m2 = $('#modal'); m2.querySelector('#ai_t').onchange = sync; if (!forms.length) { m2.querySelector('#ai_t').value = 'tutorat'; } sync();
+};
+ACT.aideResolue = async d => { try { await DB.update('aides', d.id, { statut: 'Résolue', majLe: new Date().toISOString() }); const x = (S.D.aides || []).find(y => y.id === d.id); if (x) x.statut = 'Résolue'; toast('Merci, demande clôturée', 'ok'); render(); } catch (e) { toast(e.message, 'bad'); } };
+
+// ---------- Page personnel : demandes reçues et compréhension par séance ----------
+const aidesPourMoi = D => (D.aides || []).filter(x => S.role !== 'formateur' || (x.destinataires || []).includes(lower(S.user.email)) || myFormations(D).some(f => f.id === x.formationId));
+PAGES.aides = D => {
+  const tab = S.aTab || 'demandes';
+  const tabs = `<div class="tabs" style="margin-bottom:12px">${[['demandes', 'Demandes d\'aide'], ['comp', 'Compréhension des séances']].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="aTab" data-t="${k}">${l}</button>`).join('')}</div>`;
+  if (tab === 'comp') {
+    const fids = new Set(myFormations(D).map(f => f.id)), par = {};
+    (D.comprehension || []).forEach(c => (par[c.seanceId] ||= []).push(c));
+    const L = D.seances.filter(s => par[s.id] && (S.role !== 'formateur' || fids.has(s.formationId))).sort((a, b) => b.date.localeCompare(a.date));
+    return tabs + `<div class="alert info">${IC.info}<div>Moyenne des réponses des apprenants présents (0 = rien compris, 10 = tout compris). Une séance sous 5/10 mérite une reprise ou une séance d'explication.</div></div>
+    <div class="card tbl-wrap"><table><thead><tr><th>Séance</th><th>Formation</th><th>Réponses</th><th>Moyenne</th><th>Sous 5/10</th></tr></thead><tbody>${L.map(s => { const r = par[s.id], m = sum(r, x => x.note) / r.length, bas = r.filter(x => x.note < 5).length, [lib, cl] = NIV_COMP(Math.round(m));
+      return `<tr><td><div class="strong">${esc(s.theme || 'Séance')}</div><div class="small muted">${fDate(s.date)}</div></td><td class="small">${esc(fName(D, s.formationId))}</td><td>${r.length}/${D.presences.filter(p => p.seanceId === s.id && (p.statut === 'P' || p.statut === 'R')).length || '—'}</td><td><span class="b ${cl}">${(Math.round(m * 10) / 10).toString().replace('.', ',')}/10</span></td><td>${bas ? `<span class="b b-r" title="${esc(r.filter(x => x.note < 5).map(x => aName(D, x.email) + ' : ' + x.note).join('\n'))}">${bas}</span>` : '0'}</td></tr>`; }).join('') || `<tr><td colspan="5">${empty('Aucune réponse pour le moment.', IC.chart)}</td></tr>`}</tbody></table></div>`;
+  }
+  const L = aidesPourMoi(D).sort((a, b) => (a.statut === 'Résolue') - (b.statut === 'Résolue') || (b.creeLe || '').localeCompare(a.creeLe || ''));
+  return tabs + `<div class="alert info">${IC.info}<div>Les demandes « tutorat » sont aussi visibles par les tuteurs dans CVPB Manager. Répondez par écrit ou proposez une séance d'explication.</div></div>
+  <div class="card">${L.map(x => `<div class="list-i" style="display:block"><div style="display:flex;gap:8px;align-items:center"><div class="t" style="flex:1">${esc(x.sujet)}</div>${aideStatut(x)}</div>
+    <div class="s">${esc(x.nom)} · ${esc(x.matricule)} · ${x.type === 'tutorat' ? `Tutorat ${esc(x.specCode || '')} ${esc(x.niveau || '')}` : esc(x.formationTitre)} · ${fDT(x.creeLe)}</div>
+    <div class="small" style="margin-top:6px;white-space:pre-line">${esc(x.message)}</div>
+    ${(x.reponses || []).map(r => `<div class="small" style="margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--vert-l)"><b>${esc(r.parNom)}</b> · ${fDT(r.le)}<div style="white-space:pre-line;margin-top:4px">${esc(r.texte)}</div></div>`).join('')}
+    ${x.statut !== 'Résolue' && ['president', 'resp_formation', 'resp_suivi', 'formateur'].includes(S.role) ? `<div style="margin-top:8px"><button class="btn btn-p btn-s" data-act="aideRepondre" data-id="${esc(x.id)}">${IC.send} Répondre</button></div>` : ''}</div>`).join('') || empty('Aucune demande d\'aide.', IC.info)}</div>`;
+};
+ACT.aTab = d => { S.aTab = d.t; render(); };
+ACT.aideRepondre = d => {
+  const x = (S.D.aides || []).find(y => y.id === d.id); if (!x) return;
+  openModal({ title: `Répondre à ${esc(x.nom)}`, ok: 'Envoyer la réponse', okClass: 'btn-g', body: `<p class="small muted">${esc(x.sujet)}</p><div class="fld"><label>Votre réponse</label><textarea class="inp" id="ar_t" rows="5" maxlength="2000" placeholder="Explication, ressource, ou proposition de séance (date, heure, lieu/lien)…"></textarea></div><div class="fld"><label>Statut</label><select class="inp" id="ar_s"><option>Prise en charge</option><option>Résolue</option></select></div>`,
+    onOk: async m => { const t = m.querySelector('#ar_t').value.trim(); if (t.length < 3) { toast('Écrivez votre réponse.', 'bad'); return false; }
+      const reps = [...(x.reponses || []), { par: S.user.email, parNom: S.user.nom || S.user.email, le: new Date().toISOString(), texte: t }];
+      try { await DB.update('aides', x.id, { reponses: reps, statut: m.querySelector('#ar_s').value, majLe: new Date().toISOString() }); x.reponses = reps; x.statut = m.querySelector('#ar_s').value; toast('Réponse envoyée : l\'apprenant est notifié.', 'ok'); render(); }
+      catch (e) { toast(e.message, 'bad'); return false; } } });
+};
+function notifsAide(D, me, r) {
+  if (r === 'etudiant') {
+    const n1 = (D.aides || []).filter(x => x.email === me).flatMap(x => (x.reponses || []).map((rp, i) => ({ id: `air_${x.id}_${i}`, local: true, dest: me, cat: 'aide', titre: 'Réponse à votre demande d\'aide', message: `${rp.parNom} : ${String(rp.texte).slice(0, 140)}`, date: rp.le })));
+    const t7 = ymd(new Date(Date.now() - 7 * 864e5));
+    const n2 = seancesSuivies(D, me, 7).filter(s => s.date >= t7 && !maComp(D, s.id)).map(s => ({ id: 'cmp_' + s.id, local: true, dest: me, cat: 'aide', titre: 'Votre compréhension de la séance ?', message: `${fName(D, s.formationId)} — ${fDate(s.date)} : notez-la de 0 à 10.`, date: s.date + 'T20:00:00' }));
+    return [...n1, ...n2];
+  }
+  if (!AIDE_STAFF.includes(r)) return [];
+  return aidesPourMoi(D).filter(x => x.statut === 'Nouvelle').map(x => ({ id: 'ain_' + x.id, local: true, dest: me, cat: 'aide', titre: 'Nouvelle demande d\'aide', message: `${x.nom} — ${x.sujet}`, date: x.creeLe }));
+}
+
+// ============================================================
+// ÉDITEUR DE DONNÉES — Présidence uniquement (comptes listés dans config.js › superAdmins)
+// Modifie, crée ou supprime n'importe quel document des deux applications (même base Firebase).
+// Le serveur (règles Firestore) n'autorise ces écritures qu'au compte de la Présidence.
+// ============================================================
+const estSuperAca = () => S.role === 'president' && (DEMO || (CONFIG.superAdmins || []).map(lower).includes(lower(S.user.email)));
+const ED_COLS = [
+  ['CVPB Académie', ['aca_apprenants', 'aca_formations', 'aca_seances', 'aca_presences', 'aca_exercices', 'aca_notes', 'aca_quiz', 'aca_quiz_cles', 'aca_reponses', 'aca_comprehension', 'aca_sanctions', 'aca_activites', 'aca_annonces', 'aca_infos', 'aca_validations', 'aca_notifications', 'aca_settings', 'demandes_aide']],
+  ['CVPB Manager', ['etudiants', 'prive', 'encaissements', 'depots', 'operations', 'tshirts', 'formations', 'seances', 'notes', 'notes_eleves', 'programme', 'pointages_tutorat', 'pointages_communaute', 'affectations', 'rapports_tuteurs', 'rapports_delegues', 'demandes_cours', 'notes_tuteurs', 'consignes', 'decisions', 'taches', 'reunions', 'evaluations', 'users', 'parametres', 'audit']]
+];
+const edLogique = col => { if (col.startsWith('aca_')) return col.slice(4); const r = Object.entries(PHYS_MAP).find(([, v]) => v === col); return r ? r[0] : col; };
+const ED = {
+  async list(col) { if (DEMO) return (DemoDB.data[edLogique(col)] || []).map(x => ({ ...x })); const { collection, getDocs } = S.fb.fs; const sn = await getDocs(collection(S.fb.db, col)); return sn.docs.map(d => ({ ...d.data(), id: d.id })); },
+  async set(col, id, o) { if (DEMO) { const k = edLogique(col), arr = DemoDB.data[k] = DemoDB.data[k] || [], i = arr.findIndex(x => x.id === id), v = { ...o, id }; if (i >= 0) arr[i] = v; else arr.push(v); DemoDB.save(); return; } const { doc, setDoc } = S.fb.fs; await setDoc(doc(S.fb.db, col, id), o); },
+  async del(col, id) { if (DEMO) { const k = edLogique(col); DemoDB.data[k] = (DemoDB.data[k] || []).filter(x => x.id !== id); DemoDB.save(); return; } const { doc, deleteDoc } = S.fb.fs; await deleteDoc(doc(S.fb.db, col, id)); }
+};
+const edTypeA = v => v === null ? 'null' : typeof v === 'object' ? 'json' : typeof v === 'number' ? 'nombre' : typeof v === 'boolean' ? 'booleen' : 'texte';
+PAGES.donnees = D => {
+  if (!estSuperAca()) return `<div class="alert bad">${IC.lock}<div>Réservé au compte de la Présidence.</div></div>`;
+  const E = (S.ed ||= { col: 'aca_apprenants', q: '', docs: null, err: '' });
+  let L = E.docs || []; const q = lower(E.q); if (q) L = L.filter(d => lower(d.id + ' ' + JSON.stringify(d)).includes(q));
+  const resume = d => Object.entries(d).filter(([k]) => k !== 'id').slice(0, 4).map(([k, v]) => `${k} : ${typeof v === 'object' && v ? (Array.isArray(v) ? `[${v.length}]` : '{…}') : String(v).slice(0, 40)}`).join(' · ');
+  return `<div class="alert warn">${IC.shield}<div><b>Éditeur de données — Présidence uniquement.</b> Modifiez, créez ou supprimez n'importe quelle donnée de CVPB Académie et de CVPB Manager. Les liens entre documents (matricules, numéros, identifiants) ne sont pas recalculés : modifiez avec prudence.</div></div>
+  <div class="toolbar"><select class="inp" id="edCol" style="max-width:260px">${ED_COLS.map(([g, l]) => `<optgroup label="${g}">${l.map(c => `<option ${c === E.col ? 'selected' : ''}>${c}</option>`).join('')}</optgroup>`).join('')}</select>
+    <button class="btn btn-o" data-act="edLoad">${E.docs ? 'Recharger' : 'Afficher'}</button><input class="inp" id="edQ" placeholder="Rechercher" value="${esc(E.q)}" style="max-width:220px"><span class="sp"></span><button class="btn btn-p" data-act="edOpen">${IC.plus} Nouveau</button></div>
+  ${E.err ? `<div class="alert bad">${IC.alert}<div>${esc(E.err)}</div></div>` : ''}
+  ${E.docs ? `<div class="card tbl-wrap"><table><thead><tr><th>Identifiant</th><th>Contenu</th><th></th></tr></thead><tbody>${L.slice(0, 300).map(d => `<tr><td class="small strong">${esc(d.id)}</td><td class="small">${esc(resume(d))}</td><td class="right"><button class="btn btn-o btn-s" data-act="edOpen" data-id="${esc(d.id)}">${IC.edit} Modifier</button></td></tr>`).join('') || `<tr><td colspan="3">${empty('Aucun document.')}</td></tr>`}</tbody></table></div><p class="small muted">${E.docs.length} document(s)${L.length > 300 ? ' · 300 premiers affichés' : ''}</p>` : '<p class="small muted">Choisissez une collection puis « Afficher ».</p>'}`;
+};
+ACT.edLoad = async () => { const E = S.ed; E.col = $('#edCol').value; E.q = $('#edQ').value; E.err = ''; try { E.docs = (await ED.list(E.col)).sort((a, b) => String(a.id).localeCompare(String(b.id))); } catch (e) { E.docs = []; E.err = 'Lecture impossible : publiez les règles Firebase v23 (accès total de la Présidence). ' + e.message; } render(); };
+ACT.edOpen = d => {
+  const E = S.ed; E.col = $('#edCol')?.value || E.col; const isNew = !d.id, d0 = isNew ? {} : { ...((E.docs || []).find(x => x.id === d.id) || {}) }; delete d0.id;
+  const champ = (k, v) => { const t = edTypeA(v); return `<div class="edrow" style="display:grid;grid-template-columns:minmax(100px,170px) 120px 1fr 34px;gap:6px;margin-bottom:6px;align-items:start"><input class="inp edk" value="${esc(k)}" placeholder="champ"><select class="inp edt">${[['texte', 'Texte'], ['nombre', 'Nombre'], ['booleen', 'Vrai/Faux'], ['json', 'Liste / objet'], ['null', 'Vide']].map(([a, b]) => `<option value="${a}" ${a === t ? 'selected' : ''}>${b}</option>`).join('')}</select>${t === 'json' ? `<textarea class="inp edv" rows="3" style="font-family:monospace;font-size:12px">${esc(JSON.stringify(v, null, 1))}</textarea>` : t === 'booleen' ? `<select class="inp edv"><option value="true" ${v ? 'selected' : ''}>Vrai</option><option value="false" ${!v ? 'selected' : ''}>Faux</option></select>` : `<input class="inp edv" value="${esc(v == null ? '' : String(v))}">`}<button type="button" class="icon-btn" data-edx>${IC.x}</button></div>`; };
+  const m = openModal({ title: `${isNew ? 'Nouveau document' : 'Modifier'} · ${esc(E.col)}`, wide: true, ok: 'Enregistrer', body: `<div class="fld"><label>Identifiant</label><input class="inp" id="edId" value="${esc(d.id || '')}" ${isNew ? 'placeholder="Vide = automatique"' : 'readonly'}></div><div id="edF">${Object.entries(d0).map(([k, v]) => champ(k, v)).join('')}</div><button type="button" class="btn btn-o btn-s" id="edAdd">${IC.plus} Ajouter un champ</button>${isNew ? '' : `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><button type="button" class="btn btn-d btn-s" id="edDel">${IC.trash} Supprimer ce document</button></div>`}`,
+    onOk: async () => {
+      const o = {}; try { m.querySelectorAll('.edrow').forEach(r => { const k = r.querySelector('.edk').value.trim(), t = r.querySelector('.edt').value, v = r.querySelector('.edv').value; if (!k) return; if (k in o) throw `Champ en double : ${k}`;
+        o[k] = t === 'nombre' ? (() => { const n = Number(String(v).replace(',', '.')); if (v === '' || isNaN(n)) throw `« ${k} » doit être un nombre.`; return n; })() : t === 'booleen' ? v === 'true' : t === 'null' ? null : t === 'json' ? (() => { try { return JSON.parse(v); } catch { throw `« ${k} » : liste/objet mal écrit (JSON).`; } })() : v; }); } catch (e) { toast(e, 'bad'); return false; }
+      const id = m.querySelector('#edId').value.trim() || uid(); if (id.includes('/')) { toast('Identifiant invalide (« / »).', 'bad'); return false; }
+      if (isNew && (E.docs || []).some(x => x.id === id)) { toast('Cet identifiant existe déjà.', 'bad'); return false; }
+      try { await ED.set(E.col, id, o); toast('Données enregistrées', 'ok'); S.D = {}; await ACT.edLoad(); } catch (e) { toast('Refusé : ' + e.message, 'bad'); return false; }
+    } });
+  const lier = () => m.querySelectorAll('[data-edx]').forEach(b => b.onclick = () => b.closest('.edrow').remove());
+  lier(); m.querySelector('#edAdd').onclick = () => { m.querySelector('#edF').insertAdjacentHTML('beforeend', champ('', '')); lier(); };
+  m.querySelector('#edF').addEventListener('change', e => { if (!e.target.classList.contains('edt')) return; const row = e.target.closest('.edrow'), t = e.target.value, old = row.querySelector('.edv'); const n = document.createElement(t === 'json' ? 'textarea' : t === 'booleen' ? 'select' : 'input'); n.className = 'inp edv'; if (t === 'json') { n.rows = 3; n.value = '[]'; } else if (t === 'booleen') n.innerHTML = '<option value="true">Vrai</option><option value="false">Faux</option>'; else n.value = t === 'null' ? '' : old.value; old.replaceWith(n); });
+  const del = m.querySelector('#edDel'); if (del) del.onclick = async () => { if (prompt(`Suppression définitive de ${E.col}/${d.id}. Tapez SUPPRIMER pour confirmer.`) !== 'SUPPRIMER') return; try { await ED.del(E.col, d.id); closeModal(); toast('Document supprimé', 'ok'); S.D = {}; await ACT.edLoad(); } catch (e) { toast('Refusé : ' + e.message, 'bad'); } };
+};
+
 // ===== Épreuve chronométrée et surveillée =====
 // - Le chrono démarre à « Commencer » (heure enregistrée sur le serveur) et ne s'arrête plus : fermer ou recharger ne le remet pas à zéro.
 // - Une seule tentative ; brouillon enregistré automatiquement ; envoi automatique à la fin du chrono.
@@ -1673,5 +1855,8 @@ function seedDemo() {
     { id: 'qz2', formationId: 'f3', titre: 'Devoir : affiche de la CVPB Académie', consignes: 'Réalisez une affiche sur Canva et déposez le lien de partage.', duree: '', limite: fut[1] || fut[0], coef: 2, publie: true, cloture: false, publieLe: iso(4), creeLe: iso(5), creePar: 'demo.formateur' + dom, questions: [{ type: 'lien', enonce: 'Lien de votre affiche (Canva, Drive…)', points: 20 }] }];
   const quiz_cles = [{ id: 'qz1', formationId: 'f2', cles: [0, 0, [0, 1, 3], [['figer'], ['MOYENNE', 'moyenne()']], 'Résumer et analyser de grandes données ; regrouper, filtrer, calculer des totaux.'], corrigePublie: false }, { id: 'qz2', formationId: 'f3', cles: [''], corrigePublie: false }];
   const reponses = apprenants.filter(a => a.formations.includes('f2')).slice(2, 6).map((a, i) => ({ id: repId('qz1', a.id), quizId: 'qz1', formationId: 'f2', email: a.id, reponses: [i % 3 ? 0 : 1, 0, i % 2 ? [0, 1, 3] : [0, 1], ['figer', i % 2 ? 'MOYENNE' : 'somme'], 'Il sert à résumer un grand tableau de données.'], soumisLe: iso(20 - i), ...(i < 2 ? { manuel: { 4: 2 + i } } : {}) }));
-  return { mgr_notes, mgr_pt_tut, mgr_pt_com, quiz, quiz_cles, reponses, infos, validations, mgr_formations, mgr_seances, mgr_programme, settings: [{ id: 'general', ...DEFAULT_SETTINGS }], users, formations, etudiants, apprenants, seances, presences, exercices, notes, encaissements, sanctions, activites, notifications, annonces: [{ id: 'an1', titre: 'Nouvelle activité : Atelier CV & LinkedIn', message: 'Inscrivez-vous auprès de votre délégué.', cible: 'Tous les apprenants', nb: 11, date: iso(20), par: 'demo.sg1' + dom }] };
+  // Démo : réponses de compréhension (sauf l'apprenant démo, pour qu'il puisse essayer) et une demande d'aide
+  const comprehension = presences.filter((p, i) => (p.statut === 'P' || p.statut === 'R') && p.email !== me && i % 3 !== 0).map((p, i) => ({ id: compId(p.seanceId, p.email), seanceId: p.seanceId, formationId: p.formationId, email: p.email, date: p.date, note: [8, 6, 9, 4, 7, 10, 3, 7][i % 8], le: iso(30) }));
+  const aides = [{ id: 'aid1', email: apprenants[2].id, matricule: apprenants[2].matricule, nom: 'Étudiant démo', niveau: 'Licence 1', specCode: 'IAN-DAS', type: 'formation', formationId: 'f2', formationTitre: 'Bureautique : Word, Excel, PowerPoint', destinataires: [], sujet: 'Je ne comprends pas RECHERCHEV', message: 'Je ne sais pas quelle plage sélectionner ni à quoi sert le dernier argument (FAUX).', statut: 'Nouvelle', reponses: [], creeLe: iso(5) }];
+  return { comprehension, aides, mgr_notes, mgr_pt_tut, mgr_pt_com, quiz, quiz_cles, reponses, infos, validations, mgr_formations, mgr_seances, mgr_programme, settings: [{ id: 'general', ...DEFAULT_SETTINGS }], users, formations, etudiants, apprenants, seances, presences, exercices, notes, encaissements, sanctions, activites, notifications, annonces: [{ id: 'an1', titre: 'Nouvelle activité : Atelier CV & LinkedIn', message: 'Inscrivez-vous auprès de votre délégué.', cible: 'Tous les apprenants', nb: 11, date: iso(20), par: 'demo.sg1' + dom }] };
 }
