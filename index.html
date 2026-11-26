@@ -326,11 +326,11 @@ body.dark .icon-btn .dot{border-color:#181622}
 @media (max-width:860px){body.dark #top{background:#181622}}
 @media print{#side,#top,#bottom,.toolbar,.no-print{display:none!important}#view{padding:0}.card{box-shadow:none}}
 </style>
-<link rel="stylesheet" href="nuit.css?v=1">
+<link rel="stylesheet" href="nuit.css?v=3">
 </head>
 <body>
 <script>try{if(localStorage.getItem('cvpba_theme')!=='light')document.body.classList.add('dark')}catch(e){document.body.classList.add('dark')}</script>
-<script src="nuit.js?v=1" data-app="aca" data-logo="logo-mark.png" data-nom="CVPB Académie" data-sous="Renforce tes compétences, complète ton parcours"></script>
+<script src="nuit.js?v=3" data-app="aca" data-logo="logo-mark.png" data-nom="CVPB Académie" data-sous="Renforce tes compétences, complète ton parcours"></script>
 <div id="loader"><div class="spin"></div></div>
 
 <!-- Écran de connexion -->
@@ -381,7 +381,7 @@ body.dark .icon-btn .dot{border-color:#181622}
 <div id="modal" class="hidden"></div>
 <div id="toast"></div>
 
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js?v=17"></script>
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(()=>{});

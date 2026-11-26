@@ -163,6 +163,12 @@ const PHYS = c => PHYS_MAP[c] || (EXTERNES.includes(c) ? c : 'aca_' + c);
 const CODES_PRES = ['P', 'R', 'J', 'A'];
 const COLS = ['settings', 'users', 'formations', 'apprenants', 'seances', 'presences', 'exercices', 'notes', 'paiements', 'caisse', 'sanctions', 'activites', 'notifications', 'annonces'];
 
+/* ---- Aperçu « voir comme » (Président seulement) : lecture seule, état gardé pour l'onglet en cours ---- */
+const APK = 'cvpba-apercu';
+const apercuLire = () => { try { return JSON.parse(sessionStorage.getItem(APK) || 'null'); } catch { return null; } };
+const garde = () => { if (S.apercu) { const e = new Error('Aperçu en lecture seule : aucune modification n’est enregistrée.'); e.apercu = true; throw e; } };
+window.addEventListener('unhandledrejection', ev => { if (ev.reason?.apercu) { ev.preventDefault(); try { toast(ev.reason.message); } catch { } } });
+
 const DemoDB = {
   KEY: 'cvpba_demo_v9',
   data: null,
@@ -172,10 +178,10 @@ const DemoDB = {
   async list(col, f = {}) { const arr = this.data[col] || []; return arr.filter(x => Object.entries(f).every(([k, v]) => x[k] === v)).map(x => ({ ...x })); },
   async get(col, id) { const x = (this.data[col] || []).find(x => x.id === id); return x ? { ...x } : null; },
   async listIn(col, path, values) { return (this.data[col] || []).filter(x => values.includes(path.reduce((o, k) => o?.[k], x))).map(x => ({ ...x })); },
-  async set(col, id, obj) { const arr = this.data[col] = this.data[col] || []; const i = arr.findIndex(x => x.id === id); const v = { ...(i >= 0 ? arr[i] : {}), ...obj, id }; if (i >= 0) arr[i] = v; else arr.push(v); this.save(); return id; },
+  async set(col, id, obj) { garde(); const arr = this.data[col] = this.data[col] || []; const i = arr.findIndex(x => x.id === id); const v = { ...(i >= 0 ? arr[i] : {}), ...obj, id }; if (i >= 0) arr[i] = v; else arr.push(v); this.save(); return id; },
   async add(col, obj) { const id = uid(); await this.set(col, id, obj); return id; },
   async update(col, id, patch) { return this.set(col, id, patch); },
-  async remove(col, id) { this.data[col] = (this.data[col] || []).filter(x => x.id !== id); this.save(); }
+  async remove(col, id) { garde(); this.data[col] = (this.data[col] || []).filter(x => x.id !== id); this.save(); }
 };
 
 const FireDB = {
@@ -188,10 +194,10 @@ const FireDB = {
   // Requête « champ imbriqué parmi des valeurs » : ex. presences.<matricule> parmi P/R/J/A (seules les séances où l'étudiant est pointé)
   async listIn(col, path, values) { const { collection, query, where, getDocs, FieldPath } = S.fb.fs; const snap = await getDocs(query(collection(S.fb.db, PHYS(col)), where(new FieldPath(...path), 'in', values))); return snap.docs.map(d => ({ ...d.data(), id: d.id })); },
   async get(col, id) { const { doc, getDoc } = S.fb.fs; const s = await getDoc(doc(S.fb.db, PHYS(col), id)); return s.exists() ? { ...s.data(), id: s.id } : null; },
-  async set(col, id, obj) { const { doc, setDoc } = S.fb.fs; const o = { ...obj }; delete o.id; await setDoc(doc(S.fb.db, PHYS(col), id), o, { merge: true }); return id; },
-  async add(col, obj) { const { collection, addDoc } = S.fb.fs; const o = { ...obj }; delete o.id; const r = await addDoc(collection(S.fb.db, PHYS(col)), o); return r.id; },
-  async update(col, id, patch) { const { doc, updateDoc } = S.fb.fs; const o = { ...patch }; delete o.id; await updateDoc(doc(S.fb.db, PHYS(col), id), o); return id; },
-  async remove(col, id) { const { doc, deleteDoc } = S.fb.fs; await deleteDoc(doc(S.fb.db, PHYS(col), id)); }
+  async set(col, id, obj) { garde(); const { doc, setDoc } = S.fb.fs; const o = { ...obj }; delete o.id; await setDoc(doc(S.fb.db, PHYS(col), id), o, { merge: true }); return id; },
+  async add(col, obj) { garde(); const { collection, addDoc } = S.fb.fs; const o = { ...obj }; delete o.id; const r = await addDoc(collection(S.fb.db, PHYS(col)), o); return r.id; },
+  async update(col, id, patch) { garde(); const { doc, updateDoc } = S.fb.fs; const o = { ...patch }; delete o.id; await updateDoc(doc(S.fb.db, PHYS(col), id), o); return id; },
+  async remove(col, id) { garde(); const { doc, deleteDoc } = S.fb.fs; await deleteDoc(doc(S.fb.db, PHYS(col), id)); }
 };
 const DB = DEMO ? DemoDB : FireDB;
 
@@ -1412,6 +1418,7 @@ function destFormation(D, fid) {
 }
 // Notification côté CVPB Manager (canaux : e_<email> pour une personne, rôle « tuteur » / « tuteurs » / « formation »)
 async function notifierManager(canaux, texte) {
+  if (S.apercu) return;
   if (DEMO || !S.fb?.auth?.currentUser) return;
   const { doc, setDoc } = S.fb.fs, id = 'A' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const data = { le: new Date().toISOString(), par: S.fb.auth.currentUser.uid, parNom: S.user.nom || S.user.email, role: 'etudiant', action: 'aide', texte, pour: canaux };
@@ -1529,8 +1536,8 @@ const ED_COLS = [
 const edLogique = col => { if (col.startsWith('aca_')) return col.slice(4); const r = Object.entries(PHYS_MAP).find(([, v]) => v === col); return r ? r[0] : col; };
 const ED = {
   async list(col) { if (DEMO) return (DemoDB.data[edLogique(col)] || []).map(x => ({ ...x })); const { collection, getDocs } = S.fb.fs; const sn = await getDocs(collection(S.fb.db, col)); return sn.docs.map(d => ({ ...d.data(), id: d.id })); },
-  async set(col, id, o) { if (DEMO) { const k = edLogique(col), arr = DemoDB.data[k] = DemoDB.data[k] || [], i = arr.findIndex(x => x.id === id), v = { ...o, id }; if (i >= 0) arr[i] = v; else arr.push(v); DemoDB.save(); return; } const { doc, setDoc } = S.fb.fs; await setDoc(doc(S.fb.db, col, id), o); },
-  async del(col, id) { if (DEMO) { const k = edLogique(col); DemoDB.data[k] = (DemoDB.data[k] || []).filter(x => x.id !== id); DemoDB.save(); return; } const { doc, deleteDoc } = S.fb.fs; await deleteDoc(doc(S.fb.db, col, id)); }
+  async set(col, id, o) { garde(); if (DEMO) { const k = edLogique(col), arr = DemoDB.data[k] = DemoDB.data[k] || [], i = arr.findIndex(x => x.id === id), v = { ...o, id }; if (i >= 0) arr[i] = v; else arr.push(v); DemoDB.save(); return; } const { doc, setDoc } = S.fb.fs; await setDoc(doc(S.fb.db, col, id), o); },
+  async del(col, id) { garde(); if (DEMO) { const k = edLogique(col); DemoDB.data[k] = (DemoDB.data[k] || []).filter(x => x.id !== id); DemoDB.save(); return; } const { doc, deleteDoc } = S.fb.fs; await deleteDoc(doc(S.fb.db, col, id)); }
 };
 const edTypeA = v => v === null ? 'null' : typeof v === 'object' ? 'json' : typeof v === 'number' ? 'nombre' : typeof v === 'boolean' ? 'booleen' : 'texte';
 PAGES.donnees = D => {
@@ -1687,6 +1694,9 @@ function showLogin(err) {
   $('#loginErr').innerHTML = err ? `<div class="err">${err}</div>` : '';
 }
 async function enterApp(user, role) {
+  S.apercu = null; S.reel = null;
+  const ap = role === 'president' ? apercuLire() : null;
+  if (ap && ROLES[ap.role] && ap.role !== 'president') { S.reel = { user, role }; S.apercu = ap; if (ap.email) user = { ...user, email: ap.email, nom: ap.nom || ap.email }; role = ap.role; }
   S.user = user; S.role = role; S.D = {};
   $('#whoName').textContent = user.nom; $('#whoRole').textContent = ROLES[role]; $('#rolePill').textContent = ROLES[role];
   $('#demoPill').classList.toggle('hidden', !DEMO);
@@ -1715,6 +1725,30 @@ async function resolveRole(email, displayName) {
   if (a.statut === 'Abandon') throw new Error('Votre inscription à l\'Académie est clôturée. Contactez le Responsable Formation.');
   return { user: { email, nom: e.nom }, role: 'etudiant' };
 }
+
+
+// ------------------------------------------------------------
+// CENTRE DES INTERFACES : changer d'application ou « voir comme » (Président, lecture seule)
+// ------------------------------------------------------------
+const ROLE_ICO = { vp: '🛡️', sg: '📜', resp_formation: '🎓', resp_suivi: '🤝', formateur: '🧑‍🏫', encaissement: '💰', caisse: '🏦', communication: '📣', etudiant: '🎒' };
+const ROLE_SOUS = { vp: 'Lecture de tout, sans modifier', sg: 'Membres, annonces, calendrier', resp_formation: 'Formations, séances, quiz', resp_suivi: 'Suivi, aides, assiduité', formateur: 'Ses formations, appel, notes', encaissement: 'Paiements des apprenants', caisse: 'Situation financière', communication: 'Informations et annonces', etudiant: 'Ce que voit un apprenant' };
+const quitterApercu = () => { try { sessionStorage.removeItem(APK); } catch { } location.hash = '#/home'; location.reload(); };
+const lancerApercu = (role, p) => { try { sessionStorage.setItem(APK, JSON.stringify({ role, email: p?.email || null, nom: p?.nom || null })); } catch { } location.hash = '#/home'; location.reload(); };
+window.CVPB_APERCU = () => S.apercu ? { texte: `${ROLES[S.apercu.role]}${S.apercu.nom ? ' · ' + S.apercu.nom : ''}`, quitter: quitterApercu } : null;
+window.CVPB_INTERFACES = async () => {
+  const reel = S.reel?.role || S.role;
+  const cfg = { intro: reel === 'president' ? 'Ouvrez une autre application, ou voyez l\'interface d\'un autre rôle exactement comme la personne la voit (lecture seule).' : `Vous êtes connecté en tant que « ${ROLES[S.role]} ». Ouvrez l'autre application CVPB avec le même compte UVCI.`,
+    apps: [{ nom: 'CVPB Académie', sous: 'Formations, séances, notes, assiduité', ico: '🎓', ici: true }, { nom: 'CVPB Manager', sous: 'Registre, caisse, suivi, tutorat, équipe', ico: '🗂️', url: CONFIG.urlManager || '../cvpb-gestion/' }], groupes: [] };
+  if (reel !== 'president') return cfg;
+  const items = [{ nom: 'Ma vue · Président', sous: 'Tous les écrans, avec droit de modification', ico: '👑', actif: !S.apercu, appliquer: () => quitterApercu() }];
+  const staffDe = async role => { const U = await DB.list('users').catch(() => []); return U.filter(u => role === 'communication' ? estComm(u) : acaRole(u) === role).map(u => ({ email: lower(u.email || u.id), nom: u.nom || u.email || u.id, sous: u.email || u.id })).sort((a, b) => a.nom.localeCompare(b.nom, 'fr')); };
+  const apprenantsListe = async () => { const [A, E] = await Promise.all([DB.list('apprenants').catch(() => []), DB.list('etudiants').catch(() => [])]); return A.map(a => mergeApp(a, E.find(e => e.id === a.matricule))).filter(a => a.statut !== 'Abandon').map(a => ({ email: lower(a.email || a.id), nom: a.nom || a.email || a.id, sous: [a.niveau, a.matricule].filter(Boolean).join(' · ') })).sort((a, b) => a.nom.localeCompare(b.nom, 'fr')); };
+  for (const r of ['vp', 'sg', 'resp_formation', 'resp_suivi', 'formateur', 'encaissement', 'caisse', 'communication', 'etudiant'])
+    items.push({ nom: ROLES[r], sous: ROLE_SOUS[r], ico: ROLE_ICO[r], actif: S.apercu?.role === r, sansPersonne: r !== 'etudiant' && r !== 'formateur', choisir: r === 'etudiant' ? apprenantsListe : () => staffDe(r),
+      note: r === 'etudiant' ? 'Choisissez l\'apprenant dont vous voulez voir l\'espace : formations, notes, paiements et aides tels qu\'il les voit.' : undefined, appliquer: p => lancerApercu(r, p) });
+  cfg.groupes.push({ titre: 'Voir comme…', note: 'Aperçu en lecture seule : vous ne pouvez rien modifier ni envoyer pendant l\'aperçu.', items });
+  return cfg;
+};
 
 async function initFirebase() {
   const v = '10.12.2', base = `https://www.gstatic.com/firebasejs/${v}/`;
