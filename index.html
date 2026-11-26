@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>CVPB Académie</title>
 <meta name="description" content="Plateforme de gestion des formations et activités de la CVPB Académie">
-<meta name="theme-color" content="#3C1776">
+<meta name="theme-color" content="#0b0620">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -326,9 +326,11 @@ body.dark .icon-btn .dot{border-color:#181622}
 @media (max-width:860px){body.dark #top{background:#181622}}
 @media print{#side,#top,#bottom,.toolbar,.no-print{display:none!important}#view{padding:0}.card{box-shadow:none}}
 </style>
+<link rel="stylesheet" href="nuit.css?v=1">
 </head>
 <body>
-<script>try{if(localStorage.getItem('cvpba_theme')==='dark')document.body.classList.add('dark')}catch(e){}</script>
+<script>try{if(localStorage.getItem('cvpba_theme')!=='light')document.body.classList.add('dark')}catch(e){document.body.classList.add('dark')}</script>
+<script src="nuit.js?v=1" data-app="aca" data-logo="logo-mark.png" data-nom="CVPB Académie" data-sous="Renforce tes compétences, complète ton parcours"></script>
 <div id="loader"><div class="spin"></div></div>
 
 <!-- Écran de connexion -->
